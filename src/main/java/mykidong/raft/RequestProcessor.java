@@ -31,8 +31,8 @@ public class RequestProcessor extends Thread {
                 String channelId = request.getChannelId();
                 log.info("channel id: [{}]", channelId);
 
-                SocketChannel socketChannel = request.getSocketChannel();
                 NioSelector nioSelector = request.getNioSelector();
+                SocketChannel socketChannel = nioSelector.getSocketChannel(channelId);
 
                 // TODO: parse request byte buffer!!!!
                 ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
@@ -52,7 +52,7 @@ public class RequestProcessor extends Thread {
                 log.info("request messages: [{}]", new String(messageBytes));
 
                 // TODO: do response.
-                byte[] responseBytes = new String("this is response..." + Thread.currentThread()).getBytes();
+                byte[] responseBytes = new String("this is response from server: " + Thread.currentThread()).getBytes();
                 int responseLength = responseBytes.length;
                 ByteBuffer responseBuffer = ByteBuffer.allocate(4 + responseLength);
                 responseBuffer.putInt(responseBytes.length);

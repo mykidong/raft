@@ -12,9 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by mykidong on 2016-08-29.
- */
 public class NioSelector {
 
     private static Logger log = LoggerFactory.getLogger(NioSelector.class);
@@ -52,6 +49,10 @@ public class NioSelector {
         {
             throw new RuntimeException(e);
         }
+    }
+
+    public SocketChannel getSocketChannel(String channelId) {
+        return this.channelMap.get(channelId);
     }
 
     public void removeSocketChannel(String channelId)

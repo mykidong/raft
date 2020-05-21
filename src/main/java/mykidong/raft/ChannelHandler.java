@@ -76,7 +76,7 @@ public class ChannelHandler extends Thread {
 
         try {
             // request.
-            Request request = new Request(channelId, socketChannel, nioSelector);
+            Request request = new Request(channelId, nioSelector);
 
             // send request processor.
             requestQueue.put(request);
