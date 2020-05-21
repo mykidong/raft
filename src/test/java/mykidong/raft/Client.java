@@ -26,7 +26,7 @@ public class Client {
         InputStream in = clientSocket.getInputStream();
 
 
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < 5; i++) {
             byte[] messageBytes = new String("this is client request..." + i).getBytes();
             int messageLength = messageBytes.length;
             ByteBuffer buffer = ByteBuffer.allocate(4 + messageLength);
