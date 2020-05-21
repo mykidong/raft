@@ -32,7 +32,7 @@ public class RaftServer {
         BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
 
         // poll timeout for request queue.
-        long requestQueuePollTimeout = 1000;
+        long requestQueuePollTimeout = 10;
 
         // channel processors.
         List<ChannelProcessor> channelProcessors = new ArrayList<>();
