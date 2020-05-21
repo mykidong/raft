@@ -20,7 +20,7 @@ public class Client {
         int port = 9912;
         RaftServer raftServer = new RaftServer(port);
 
-        Thread.sleep(200000000);
+        Thread.sleep(1000000000);
 
 
         Socket clientSocket = new Socket("localhost", port);

@@ -24,15 +24,17 @@ public class RaftServer {
 
         // socket channel queue.
         BlockingQueue<SocketChannel> socketChannelQueue = new LinkedBlockingQueue<>();
+        long socketChannelQueuePollTimeout = 1000;
 
         // request queue.
         BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
+        long requestQueuePollTimeout = 1000;
 
         // channel handlers.
         List<ChannelHandler> channelHandlers = new ArrayList<>();
         for(int i = 0; i < 5; i++)
         {
-            channelHandlers.add(new ChannelHandler(socketChannelQueue, requestQueue));
+            channelHandlers.add(new ChannelHandler(socketChannelQueue, requestQueue, socketChannelQueuePollTimeout));
         }
 
         // start channel handlers.
@@ -44,7 +46,7 @@ public class RaftServer {
         List<RequestProcessor> requestProcessors = new ArrayList<>();
         for(int i = 0; i < 5; i++)
         {
-            requestProcessors.add(new RequestProcessor(requestQueue));
+            requestProcessors.add(new RequestProcessor(requestQueue, requestQueuePollTimeout));
         }
 
         // start request processors.

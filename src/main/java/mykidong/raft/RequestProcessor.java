@@ -7,24 +7,28 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class RequestProcessor extends Thread {
 
     private static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
 
     private BlockingQueue<Request> requestQueue;
+    private long pollTimeout;
 
-    public RequestProcessor(BlockingQueue<Request> requestQueue) {
+    public RequestProcessor(BlockingQueue<Request> requestQueue, long pollTimeout) {
         this.requestQueue = requestQueue;
+        this.pollTimeout = pollTimeout;
     }
 
     @Override
     public void run() {
         while (true) {
             try {
-                Request request = requestQueue.poll();
+                Request request = requestQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
                 if(request == null)
                 {
+                    log.debug("request is null!");
                     continue;
                 }
 

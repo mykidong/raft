@@ -18,18 +18,20 @@ public class ChannelHandler extends Thread {
     private BlockingQueue<SocketChannel> socketChannelQueue;
     private BlockingQueue<Request> requestQueue;
     private NioSelector nioSelector;
+    private long pollTimeout;
 
-    public ChannelHandler(BlockingQueue<SocketChannel> socketChannelQueue, BlockingQueue<Request> requestQueue) {
+    public ChannelHandler(BlockingQueue<SocketChannel> socketChannelQueue, BlockingQueue<Request> requestQueue, long pollTimeout) {
         this.socketChannelQueue = socketChannelQueue;
         this.requestQueue = requestQueue;
         this.nioSelector = NioSelector.open();
+        this.pollTimeout = pollTimeout;
     }
 
     @Override
     public void run() {
         while (true) {
             try {
-                SocketChannel socketChannel = this.socketChannelQueue.poll(1000L, TimeUnit.MILLISECONDS);
+                SocketChannel socketChannel = this.socketChannelQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
 
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
