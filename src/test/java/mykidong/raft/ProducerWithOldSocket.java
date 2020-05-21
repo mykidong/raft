@@ -8,18 +8,50 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-public class Client {
+public class ProducerWithOldSocket {
 
-    private static Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static Logger LOG = LoggerFactory.getLogger(ProducerWithOldSocket.class);
 
     @Test
-    public void sendSimpleMessage() throws Exception {
+    public void runMultipleClients() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+        List<Future<String>> futureList = new ArrayList<Future<String>>();
 
-        // start raft server.
+
+        for(int x = 0; x < 10; x++) {
+            Future<String> future = executor.submit(() -> {
+                return this.sendSimpleMessage();
+            });
+
+            futureList.add(future);
+        }
+
+        for (Future<String> fut : futureList) {
+            try {
+                System.out.println(new Date() + "::" + fut.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+        executor.shutdown();
+    }
+
+    @Test
+    public void sendMessagesWithSingleClient() throws Exception {
+        sendSimpleMessage();
+    }
+
+
+    private String sendSimpleMessage() throws Exception {
         int port = 9912;
-        RaftServer raftServer = new RaftServer(port);
-
         Socket clientSocket = new Socket("localhost", port);
 
         OutputStream out = clientSocket.getOutputStream();
@@ -59,5 +91,6 @@ public class Client {
             //Thread.sleep(1000);
         }
 
+        return "OK";
     }
 }

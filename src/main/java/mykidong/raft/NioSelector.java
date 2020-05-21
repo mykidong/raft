@@ -61,10 +61,10 @@ public class NioSelector {
 
         if(socketChannel != null) {
             try {
-                socketChannel.finishConnect();
+                socketChannel.close();
             }catch (IOException e)
             {
-                e.printStackTrace();
+                LOG.error(e.getMessage());
             }
         }
 
@@ -102,13 +102,6 @@ public class NioSelector {
         return socketChannel.keyFor(this.selector).interestOps(interestOps);
     }
 
-
-    public void interestOpsWithAttachment(String channelId, int interestOps, Object attachment)
-    {
-
-        SelectionKey selectionKey = interestOps(channelId, interestOps);
-        selectionKey.attach(attachment);
-    }
 
     public SelectionKey interestOps(String channelId, int interestOps)
     {

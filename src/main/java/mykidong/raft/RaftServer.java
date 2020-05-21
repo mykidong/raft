@@ -1,14 +1,14 @@
 package mykidong.raft;
 
+import org.apache.log4j.xml.DOMConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import org.apache.log4j.xml.DOMConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RaftServer {
 
@@ -28,34 +28,16 @@ public class RaftServer {
         // poll timeout for socket channel queue.
         long socketChannelQueuePollTimeout = 1000;
 
-        // request queue.
-        BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
-
-        // poll timeout for request queue.
-        long requestQueuePollTimeout = 1000;
-
         // channel processors.
         List<ChannelProcessor> channelProcessors = new ArrayList<>();
         for(int i = 0; i < 5; i++)
         {
-            channelProcessors.add(new ChannelProcessor(socketChannelQueue, requestQueue, socketChannelQueuePollTimeout));
+            channelProcessors.add(new ChannelProcessor(socketChannelQueue, socketChannelQueuePollTimeout));
         }
 
         // start channel processors.
         for(ChannelProcessor channelProcessor : channelProcessors) {
             channelProcessor.start();
-        }
-
-        // request processors.
-        List<RequestProcessor> requestProcessors = new ArrayList<>();
-        for(int i = 0; i < 5; i++)
-        {
-            requestProcessors.add(new RequestProcessor(requestQueue, requestQueuePollTimeout));
-        }
-
-        // start request processors.
-        for(RequestProcessor requestProcessor : requestProcessors) {
-            requestProcessor.start();
         }
 
         // socket server.
