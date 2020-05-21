@@ -13,7 +13,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class SocketServer extends Thread {
 
-    private static Logger log = LoggerFactory.getLogger(SocketServer.class);
+    private static Logger LOG = LoggerFactory.getLogger(SocketServer.class);
 
     private Selector selector;
     private BlockingQueue<SocketChannel> socketChannelQueue;
@@ -59,7 +59,7 @@ public class SocketServer extends Thread {
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage());
+            LOG.error(e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -72,7 +72,7 @@ public class SocketServer extends Thread {
         socketChannel.socket().setTcpNoDelay(true);
         socketChannel.socket().setKeepAlive(true);
 
-        log.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
+        LOG.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
         // put socket channel to read channel processor.
         this.socketChannelQueue.put(socketChannel);

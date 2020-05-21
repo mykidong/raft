@@ -11,16 +11,16 @@ import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class ChannelHandler extends Thread {
+public class ChannelProcessor extends Thread {
 
-    private static Logger log = LoggerFactory.getLogger(ChannelHandler.class);
+    private static Logger LOG = LoggerFactory.getLogger(ChannelProcessor.class);
 
     private BlockingQueue<SocketChannel> socketChannelQueue;
     private BlockingQueue<Request> requestQueue;
     private NioSelector nioSelector;
     private long pollTimeout;
 
-    public ChannelHandler(BlockingQueue<SocketChannel> socketChannelQueue, BlockingQueue<Request> requestQueue, long pollTimeout) {
+    public ChannelProcessor(BlockingQueue<SocketChannel> socketChannelQueue, BlockingQueue<Request> requestQueue, long pollTimeout) {
         this.socketChannelQueue = socketChannelQueue;
         this.requestQueue = requestQueue;
         this.nioSelector = NioSelector.open();
@@ -33,21 +33,23 @@ public class ChannelHandler extends Thread {
             try {
                 SocketChannel socketChannel = this.socketChannelQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
 
-                // if new connection is added, register it to selector.
+                // if new connection is returned, register it to selector.
                 if (socketChannel != null) {
                     String channelId = NioSelector.makeChannelId(socketChannel);
                     nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
 
-                    log.info("channelId: [{}] registered, thread: [{}]", channelId, Thread.currentThread());
+                    LOG.info("channelId: [{}] registered in thread: [{}]", channelId, Thread.currentThread());
                 }
 
                 int ready = this.nioSelector.select();
+                // if not ready, continue.
                 if (ready == 0) {
                     continue;
                 }
 
                 Iterator<SelectionKey> iter = this.nioSelector.selectedKeys().iterator();
 
+                // all the requests and responses from the registered socket channels will be handled here!
                 while (iter.hasNext()) {
                     SelectionKey key = iter.next();
 
@@ -55,10 +57,12 @@ public class ChannelHandler extends Thread {
 
                     // handle request.
                     if (key.isReadable()) {
+                        LOG.debug("handle incoming request...");
                         this.request(key);
                     }
-                    // handle response.
+                    // do response.
                     else if (key.isWritable()) {
+                        LOG.debug("handle outgoing response...");
                         this.response(key);
                     }
                 }
@@ -74,7 +78,6 @@ public class ChannelHandler extends Thread {
 
         // channel id.
         String channelId = NioSelector.makeChannelId(socketChannel);
-        log.info("channelId: [{}]", channelId);
 
         try {
             // request.
@@ -93,7 +96,7 @@ public class ChannelHandler extends Thread {
 
         // channel id.
         String channelId = NioSelector.makeChannelId(socketChannel);
-        log.info("channelId for response: " + channelId);
+        LOG.info("channelId for response: " + channelId);
 
         try {
             ByteBuffer buffer = (ByteBuffer) key.attachment();
@@ -107,7 +110,7 @@ public class ChannelHandler extends Thread {
             while (buffer.hasRemaining()) {
                 socketChannel.write(buffer);
             }
-            log.info("response done for channel id: " + channelId);
+            LOG.info("response done for channel id: " + channelId);
 
             buffer.clear();
 

@@ -8,13 +8,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NioSelector {
 
-    private static Logger log = LoggerFactory.getLogger(NioSelector.class);
+    private static Logger LOG = LoggerFactory.getLogger(NioSelector.class);
 
     private Selector selector;
 
@@ -28,7 +28,7 @@ public class NioSelector {
 
     private NioSelector()
     {
-        channelMap = new HashMap<>();
+        channelMap = new ConcurrentHashMap<>();
 
         try {
             this.selector = Selector.open();
@@ -81,7 +81,7 @@ public class NioSelector {
         }
         else
         {
-            log.warn("socket channel for channelId [{}] is null.", channelId);
+            LOG.warn("socket channel for channelId [{}] is null.", channelId);
         }
     }
 
@@ -112,7 +112,6 @@ public class NioSelector {
 
     public SelectionKey interestOps(String channelId, int interestOps)
     {
-
         return this.channelMap.get(channelId).keyFor(this.selector).interestOps(interestOps);
     }
 

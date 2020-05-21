@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class RaftServer {
 
-    private static Logger log = LoggerFactory.getLogger(RaftServer.class);
+    private static Logger LOG = LoggerFactory.getLogger(RaftServer.class);
 
     private int port = 9912;
 
@@ -24,22 +24,26 @@ public class RaftServer {
 
         // socket channel queue.
         BlockingQueue<SocketChannel> socketChannelQueue = new LinkedBlockingQueue<>();
+
+        // poll timeout for socket channel queue.
         long socketChannelQueuePollTimeout = 1000;
 
         // request queue.
         BlockingQueue<Request> requestQueue = new LinkedBlockingQueue<>();
+
+        // poll timeout for request queue.
         long requestQueuePollTimeout = 1000;
 
-        // channel handlers.
-        List<ChannelHandler> channelHandlers = new ArrayList<>();
+        // channel processors.
+        List<ChannelProcessor> channelProcessors = new ArrayList<>();
         for(int i = 0; i < 5; i++)
         {
-            channelHandlers.add(new ChannelHandler(socketChannelQueue, requestQueue, socketChannelQueuePollTimeout));
+            channelProcessors.add(new ChannelProcessor(socketChannelQueue, requestQueue, socketChannelQueuePollTimeout));
         }
 
-        // start channel handlers.
-        for(ChannelHandler channelHandler : channelHandlers) {
-            channelHandler.start();
+        // start channel processors.
+        for(ChannelProcessor channelProcessor : channelProcessors) {
+            channelProcessor.start();
         }
 
         // request processors.
@@ -60,6 +64,6 @@ public class RaftServer {
         // start socket server.
         socketServer.start();
 
-        log.info("socket server is listening on " + port + " ...");
+        LOG.info("socket server is listening on " + port + " ...");
     }
 }

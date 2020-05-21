@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RequestProcessor extends Thread {
 
-    private static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
+    private static Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
 
     private BlockingQueue<Request> requestQueue;
     private long pollTimeout;
@@ -28,17 +28,16 @@ public class RequestProcessor extends Thread {
                 Request request = requestQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
                 if(request == null)
                 {
-                    log.debug("request is null!");
                     continue;
                 }
 
                 String channelId = request.getChannelId();
-                log.info("channel id: [{}]", channelId);
 
                 NioSelector nioSelector = request.getNioSelector();
                 SocketChannel socketChannel = nioSelector.getSocketChannel(channelId);
 
-                // TODO: parse request byte buffer!!!!
+                // TODO: parse request.
+
                 ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
                 socketChannel.read(totalSizeBuffer);
                 totalSizeBuffer.rewind();
@@ -53,9 +52,10 @@ public class RequestProcessor extends Thread {
                 byte[] messageBytes = new byte[totalSize];
                 buffer.get(messageBytes);
 
-                log.info("request messages: [{}]", new String(messageBytes));
+                LOG.info("request messages: [{}]", new String(messageBytes));
 
-                // TODO: do response.
+                // TODO: create response.
+
                 byte[] responseBytes = new String("this is response from server: " + Thread.currentThread()).getBytes();
                 int responseLength = responseBytes.length;
                 ByteBuffer responseBuffer = ByteBuffer.allocate(4 + responseLength);
