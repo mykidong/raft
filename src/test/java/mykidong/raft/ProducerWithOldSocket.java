@@ -1,5 +1,8 @@
 package mykidong.raft;
 
+import com.cedarsoftware.util.io.JsonWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import mykidong.raft.util.JsonUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,18 +28,15 @@ public class ProducerWithOldSocket {
         ExecutorService executor = Executors.newFixedThreadPool(50);
         List<Future<String>> futureList = new ArrayList<Future<String>>();
 
-
-        for(int x = 0; x < 10; x++) {
-            Future<String> future = executor.submit(() -> {
-                return this.sendSimpleMessage();
-            });
-
+        int TASK_MAX = 5;
+        for(int x = 0; x < TASK_MAX; x++) {
+            Future<String> future = executor.submit(ProducerWithOldSocket::sendSimpleMessages);
             futureList.add(future);
         }
 
         for (Future<String> fut : futureList) {
             try {
-                System.out.println(new Date() + "::" + fut.get());
+                LOG.info(new Date() + "::" + fut.get());
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
@@ -45,20 +45,23 @@ public class ProducerWithOldSocket {
     }
 
     @Test
-    public void sendMessagesWithSingleClient() throws Exception {
-        sendSimpleMessage();
+    public void runSingleClient() throws Exception {
+        sendSimpleMessages();
     }
 
 
-    private String sendSimpleMessage() throws Exception {
+    private static String sendSimpleMessages() throws Exception {
         int port = 9912;
         Socket clientSocket = new Socket("localhost", port);
 
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
 
+        int MAX = 2;
 
-        for(int i = 0; i < 5; i++) {
+        List<String> responses = new ArrayList<>();
+
+        for(int i = 0; i < MAX; i++) {
             byte[] messageBytes = new String("this is client request..." + i).getBytes();
             int messageLength = messageBytes.length;
             ByteBuffer buffer = ByteBuffer.allocate(4 + messageLength);
@@ -84,13 +87,19 @@ public class ProducerWithOldSocket {
             byte[] responseMessageBytes = new byte[totalSize];
             in.read(responseMessageBytes);
 
-            LOG.info("response: " + new String(responseMessageBytes));
+
+            String response = "response: [" + new String(responseMessageBytes) + "], for request: [" + new String(messageBytes) + "], in client thread: " + Thread.currentThread();
+
+            responses.add(response);
+
+            LOG.info(response);
             LOG.info("===========================================================");
 
             buffer.clear();
-            //Thread.sleep(1000);
         }
 
-        return "OK";
+        String prettyJson = JsonWriter.formatJson(JsonUtils.toJson(new ObjectMapper(), responses));
+
+        return prettyJson;
     }
 }

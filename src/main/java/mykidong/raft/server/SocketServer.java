@@ -1,4 +1,4 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,20 +9,35 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SocketServer extends Thread {
 
     private static Logger LOG = LoggerFactory.getLogger(SocketServer.class);
 
     private Selector selector;
-    private BlockingQueue<SocketChannel> socketChannelQueue;
     private boolean shutdown = false;
+    private List<ChannelProcessor> channelProcessors;
     private int port;
+    private Random random;
+    private AtomicLong socketChannelCount = new AtomicLong(0);
 
-    public SocketServer(int port, BlockingQueue<SocketChannel> socketChannelQueue) {
+    public SocketServer(int port, List<ChannelProcessor> channelProcessors) {
         this.port = port;
-        this.socketChannelQueue = socketChannelQueue;
+        this.channelProcessors = channelProcessors;
+        this.random = new Random();
+    }
+
+    private ChannelProcessor getNextChannelProcessor() {
+        long currentSocketChannelCount = socketChannelCount.getAndIncrement();
+        int channelProcessorsCount = this.channelProcessors.size();
+
+        int index = new Long(currentSocketChannelCount % channelProcessorsCount).intValue();
+        LOG.debug("channel processor selected index: [{}]", index);
+
+        return this.channelProcessors.get(index);
     }
 
     @Override
@@ -75,7 +90,7 @@ public class SocketServer extends Thread {
         LOG.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
         // put socket channel to read channel processor.
-        this.socketChannelQueue.put(socketChannel);
+        this.getNextChannelProcessor().putSocketChannel(socketChannel);
     }
 
     public void shutdown()

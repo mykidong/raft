@@ -1,4 +1,4 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +9,7 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -19,47 +20,65 @@ public class ChannelProcessor extends Thread {
     private BlockingQueue<SocketChannel> socketChannelQueue;
     private NioSelector nioSelector;
     private long pollTimeout;
+    private Thread socketChannelQueueThread;
 
-    public ChannelProcessor(BlockingQueue<SocketChannel> socketChannelQueue, long pollTimeout) {
-        this.socketChannelQueue = socketChannelQueue;
+    public ChannelProcessor(long pollTimeout, int queueSize) {
+        this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);
         this.nioSelector = NioSelector.open();
         this.pollTimeout = pollTimeout;
+
+        // run thread to detect the new socket connections from queue to register them to selector.
+        socketChannelQueueThread = new Thread(runSocketChannelQueueThread(this.socketChannelQueue, this.nioSelector, pollTimeout));
+        socketChannelQueueThread.start();
     }
 
-    private void runThreadForSocketChannelQueue()
-    {
-        // detect the new socket connections from queue to register them to selector.
-        Runnable queueThread = () -> {
+    public void putSocketChannel(SocketChannel socketChannel) {
+        try {
+            this.socketChannelQueue.put(socketChannel);
+            LOG.debug("socket channel: {} put to queue", socketChannel);
+        } catch (InterruptedException e) {
+            LOG.error("error: " + e.getMessage());
+        }
+    }
+
+    private Runnable runSocketChannelQueueThread(BlockingQueue<SocketChannel> socketChannelQueue, NioSelector nioSelector, long pollTimeout) {
+        return () -> {
             while (true) {
                 try {
-                    SocketChannel socketChannel = this.socketChannelQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
+                    SocketChannel socketChannel = socketChannelQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
                     LOG.debug("socket channel: [{}]", socketChannel);
+
+                    nioSelector.wakeup();
+
+                    nioSelector.printKeys();
+
+                    nioSelector.wakeup();
 
                     // if new connection is returned, register it to selector.
                     if (socketChannel != null) {
                         String channelId = NioSelector.makeChannelId(socketChannel);
-                        LOG.debug("new channelId: [{}]", channelId);
 
                         nioSelector.wakeup();
+
+                        // TODO:
+                        //  .....
+                        //  selector does not register new socket channel !!!!
                         nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
 
                         nioSelector.wakeup();
 
-                        LOG.info("channelId: [{}] registered in thread: [{}]", channelId, Thread.currentThread());
+                        LOG.info("channelId: [{}] registered", channelId);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOG.error(e.getMessage());
                 }
             }
         };
-        new Thread(queueThread).start();
     }
+
 
     @Override
     public void run() {
-        // run thread to detect the new socket connections from queue to register them to selector.
-        this.runThreadForSocketChannelQueue();
-
         while (true) {
             int ready = this.nioSelector.select();
             LOG.debug("ready: [{}]", ready);
@@ -69,16 +88,12 @@ public class ChannelProcessor extends Thread {
             // all the requests and responses from the registered socket channels will be handled here!
             while (iter.hasNext()) {
                 SelectionKey key = iter.next();
-
                 iter.remove();
-
-                if(key == null)
-                {
-                    LOG.warn("key is null, it is cancelled...");
-                    continue;
-                }
-
                 try {
+                    if (!key.isValid()) {
+                        continue;
+                    }
+
                     // handle request.
                     if (key.isReadable()) {
                         LOG.debug("handle incoming request...");
@@ -91,20 +106,19 @@ public class ChannelProcessor extends Thread {
                     }
                 } catch (CancelledKeyException e) {
                     LOG.error("cancelled key error: " + e.getMessage());
+                } catch (Exception e) {
+                    LOG.error(e.getMessage());
                 }
-
             }
         }
     }
 
     private void removeSocketChannel(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-
-        // channel id.
         String channelId = NioSelector.makeChannelId(socketChannel);
-
         nioSelector.removeSocketChannel(channelId);
         key.cancel();
+        nioSelector.wakeup();
     }
 
     private void request(SelectionKey key) {
@@ -140,11 +154,10 @@ public class ChannelProcessor extends Thread {
             responseBuffer.put(responseBytes);
 
             nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
-            nioSelector.wakeup();
         } catch (IOException e) {
             LOG.warn(e.getMessage());
 
-            nioSelector.removeSocketChannel(channelId);
+            removeSocketChannel(key);
             LOG.warn("socket channel [{}] removed from selector...", channelId);
         }
     }

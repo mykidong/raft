@@ -1,5 +1,6 @@
 package mykidong.raft;
 
+import mykidong.raft.server.RaftServer;
 import org.junit.Test;
 
 public class RunServer {

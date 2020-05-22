@@ -1,14 +1,11 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class RaftServer {
 
@@ -22,17 +19,17 @@ public class RaftServer {
         // log4j init.
         DOMConfigurator.configure(this.getClass().getResource("/log4j.xml"));
 
-        // socket channel queue.
-        BlockingQueue<SocketChannel> socketChannelQueue = new LinkedBlockingQueue<>();
-
         // poll timeout for socket channel queue.
         long socketChannelQueuePollTimeout = 1000;
+
+        // blocking queue size.
+        int queueSize = 4;
 
         // channel processors.
         List<ChannelProcessor> channelProcessors = new ArrayList<>();
         for(int i = 0; i < 5; i++)
         {
-            channelProcessors.add(new ChannelProcessor(socketChannelQueue, socketChannelQueuePollTimeout));
+            channelProcessors.add(new ChannelProcessor(socketChannelQueuePollTimeout, queueSize));
         }
 
         // start channel processors.
@@ -41,7 +38,7 @@ public class RaftServer {
         }
 
         // socket server.
-        SocketServer socketServer = new SocketServer(this.port, socketChannelQueue);
+        SocketServer socketServer = new SocketServer(this.port, channelProcessors);
 
         // start socket server.
         socketServer.start();

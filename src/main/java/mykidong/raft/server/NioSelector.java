@@ -1,5 +1,8 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
+import com.cedarsoftware.util.io.JsonWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import mykidong.raft.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,6 +11,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,9 +22,7 @@ public class NioSelector {
     private static Logger LOG = LoggerFactory.getLogger(NioSelector.class);
 
     private Selector selector;
-
     private Map<String, SocketChannel> channelMap;
-
 
     public static NioSelector open()
     {
@@ -32,10 +35,31 @@ public class NioSelector {
 
         try {
             this.selector = Selector.open();
-    }catch (IOException e)
+        }catch (IOException e)
         {
-            throw new RuntimeException(e);
+            LOG.error(e.getMessage());
         }
+    }
+
+    public void printKeys() {
+        Set<SelectionKey> keys = this.selector.keys();
+        List<String> currentKeys = new ArrayList<>();
+        for(SelectionKey key : keys) {
+            SocketChannel socketChannel = (SocketChannel) key.channel();
+            String channelId = NioSelector.makeChannelId(socketChannel);
+            currentKeys.add(channelId);
+        }
+
+        LOG.debug("keys: [{}]", JsonWriter.formatJson(JsonUtils.toJson(new ObjectMapper(), currentKeys)));
+
+        Set<SelectionKey> selectedKeys = this.selector.selectedKeys();
+        List<String> currentSelectedKeys = new ArrayList<>();
+        for(SelectionKey key : selectedKeys) {
+            SocketChannel socketChannel = (SocketChannel) key.channel();
+            String channelId = NioSelector.makeChannelId(socketChannel);
+            currentSelectedKeys.add(channelId);
+        }
+        LOG.debug("selectedKeys: [{}]", JsonWriter.formatJson(JsonUtils.toJson(new ObjectMapper(), currentSelectedKeys)));
     }
 
 
@@ -44,43 +68,36 @@ public class NioSelector {
         this.channelMap.put(channelId, socketChannel);
 
         try {
-            socketChannel.register(this.selector, interestOps);
-        }catch (ClosedChannelException e)
-        {
-            throw new RuntimeException(e);
+            synchronized (this.selector) {
+                socketChannel.register(this.selector, interestOps);
+            }
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
         }
     }
 
-    public SocketChannel getSocketChannel(String channelId) {
-        return this.channelMap.get(channelId);
-    }
 
     public void removeSocketChannel(String channelId)
     {
         SocketChannel socketChannel = this.channelMap.get(channelId);
 
-        if(socketChannel != null) {
+        if (socketChannel != null) {
             try {
                 socketChannel.close();
-            }catch (IOException e)
-            {
+            } catch (IOException e) {
                 LOG.error(e.getMessage());
             }
         }
-
         this.channelMap.remove(channelId);
-
     }
 
     public void attach(String channelId, int interestOps, Object attachment)
     {
         SocketChannel socketChannel = this.channelMap.get(channelId);
 
-        if(socketChannel != null) {
+        if (socketChannel != null) {
             this.attach(socketChannel, interestOps, attachment);
-        }
-        else
-        {
+        } else {
             LOG.warn("socket channel for channelId [{}] is null.", channelId);
         }
     }
@@ -93,7 +110,7 @@ public class NioSelector {
             socketChannel.register(this.selector, interestOps, attachment);
         }catch (ClosedChannelException e)
         {
-            throw new RuntimeException(e);
+            LOG.error(e.getMessage());
         }
     }
 
