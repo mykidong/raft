@@ -28,7 +28,7 @@ public class ProducerWithOldSocket {
         ExecutorService executor = Executors.newFixedThreadPool(50);
         List<Future<String>> futureList = new ArrayList<Future<String>>();
 
-        int TASK_MAX = 5;
+        int TASK_MAX = 100;
         for(int x = 0; x < TASK_MAX; x++) {
             Future<String> future = executor.submit(ProducerWithOldSocket::sendSimpleMessages);
             futureList.add(future);
@@ -57,7 +57,7 @@ public class ProducerWithOldSocket {
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
 
-        int MAX = 2;
+        int MAX = 5;
 
         List<String> responses = new ArrayList<>();
 
