@@ -1,6 +1,7 @@
 package mykidong.raft.util;
 
 
+import com.cedarsoftware.util.io.JsonWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -25,5 +26,9 @@ public class JsonUtils {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String jsonPretty(Object obj) {
+        return JsonWriter.formatJson(toJson(new ObjectMapper(), obj));
     }
 }

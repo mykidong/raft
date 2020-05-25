@@ -1,7 +1,8 @@
-package mykidong.raft.server;
+package mykidong.raft;
 
 import com.cedarsoftware.util.io.JsonWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mykidong.raft.server.ChannelUtils;
 import mykidong.raft.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public class NioServer extends Thread {
         for(SelectionKey key : keys) {
             if(key.channel() instanceof SocketChannel) {
                 SocketChannel socketChannel = (SocketChannel) key.channel();
-                String channelId = NioSelector.makeChannelId(socketChannel);
+                String channelId = ChannelUtils.makeChannelId(socketChannel);
                 currentKeys.add(channelId);
             }
         }
@@ -102,7 +103,7 @@ public class NioServer extends Thread {
         for(SelectionKey key : selectedKeys) {
             if(key.channel() instanceof SocketChannel) {
                 SocketChannel socketChannel = (SocketChannel) key.channel();
-                String channelId = NioSelector.makeChannelId(socketChannel);
+                String channelId = ChannelUtils.makeChannelId(socketChannel);
                 currentSelectedKeys.add(channelId);
             }
         }
@@ -139,7 +140,7 @@ public class NioServer extends Thread {
             byte[] messageBytes = new byte[totalSize];
             buffer.get(messageBytes);
 
-            LOG.info("request messages: [{}]", new String(messageBytes));
+            LOG.debug("request messages: [{}]", new String(messageBytes));
 
             // TODO:
             //  1. parse request header and body,

@@ -1,14 +1,14 @@
 package mykidong.raft.server;
 
+import mykidong.raft.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.CancelledKeyException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -18,72 +18,88 @@ public class ChannelProcessor extends Thread {
     private static Logger LOG = LoggerFactory.getLogger(ChannelProcessor.class);
 
     private BlockingQueue<SocketChannel> socketChannelQueue;
-    private NioSelector nioSelector;
+    private Selector selector;
     private long pollTimeout;
-    private Thread socketChannelQueueThread;
 
     public ChannelProcessor(long pollTimeout, int queueSize) {
-        this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);
-        this.nioSelector = NioSelector.open();
+        this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);        
         this.pollTimeout = pollTimeout;
-
-        // run thread to detect the new socket connections from queue to register them to selector.
-        socketChannelQueueThread = new Thread(runSocketChannelQueueThread(this.socketChannelQueue, this.nioSelector, pollTimeout));
-        socketChannelQueueThread.start();
+        
+        // create new selector.
+        newSelector();
+    }
+    
+    private void newSelector() {
+        try {
+            this.selector = Selector.open();
+        } catch (IOException e) {
+            LOG.error(e.getMessage());            
+        }
     }
 
     public void putSocketChannel(SocketChannel socketChannel) {
         try {
             this.socketChannelQueue.put(socketChannel);
             LOG.debug("socket channel: {} put to queue", socketChannel);
+
+            this.selector.wakeup();
         } catch (InterruptedException e) {
             LOG.error("error: " + e.getMessage());
         }
     }
 
-    private Runnable runSocketChannelQueueThread(BlockingQueue<SocketChannel> socketChannelQueue, NioSelector nioSelector, long pollTimeout) {
-        return () -> {
-            while (true) {
-                try {
-                    SocketChannel socketChannel = socketChannelQueue.poll(pollTimeout, TimeUnit.MILLISECONDS);
-                    LOG.debug("socket channel: [{}]", socketChannel);
+    private void registerNewConnections() {
+        try {
+            if(!this.socketChannelQueue.isEmpty()) {
+                SocketChannel socketChannel = this.socketChannelQueue.poll(this.pollTimeout, TimeUnit.MILLISECONDS);
 
-                    nioSelector.wakeup();
-
-                    nioSelector.printKeys();
-
-                    nioSelector.wakeup();
-
-                    // if new connection is returned, register it to selector.
-                    if (socketChannel != null) {
-                        String channelId = NioSelector.makeChannelId(socketChannel);
-
-                        nioSelector.wakeup();
-
-                        // TODO:
-                        //  .....
-                        //  selector does not register new socket channel !!!!
-                        nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
-
-                        nioSelector.wakeup();
-
-                        LOG.info("channelId: [{}] registered", channelId);
+                // if new socket channel is returned, register it to selector.
+                if (socketChannel != null) {
+                    try {
+                        socketChannel.register(this.selector, SelectionKey.OP_READ);
+                    } catch (ClosedChannelException e) {
+                        LOG.error(e.getMessage());
                     }
-                } catch (Exception e) {
-                    LOG.error(e.getMessage());
                 }
             }
-        };
+        } catch (InterruptedException e) {
+            LOG.error(e.getMessage());
+        }
     }
 
+    private int select() {
+        try {
+            int readyChannels = this.selector.select();
+            LOG.debug("readyChannels: [{}]", readyChannels);
+
+            return readyChannels;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+        }
+
+        return 0;
+    }
 
     @Override
     public void run() {
         while (true) {
-            int ready = this.nioSelector.select();
-            LOG.debug("ready: [{}]", ready);
+            // register new socket channel with the selector.
+            registerNewConnections();
 
-            Iterator<SelectionKey> iter = this.nioSelector.selectedKeys().iterator();
+            int readyChannels = select();
+            LOG.debug("readyChannels: [{}]", readyChannels);
+
+            // print current keys info.
+            if(LOG.isDebugEnabled()) {
+                List<String> currentKeys = ChannelUtils.getCurrentKeys(this.selector);
+                LOG.debug("keys: [{}]", JsonUtils.jsonPretty(currentKeys));
+            }
+
+            if (readyChannels == 0) {
+                continue;
+            }
+
+            Iterator<SelectionKey> iter = this.selector.selectedKeys().iterator();
 
             // all the requests and responses from the registered socket channels will be handled here!
             while (iter.hasNext()) {
@@ -96,12 +112,10 @@ public class ChannelProcessor extends Thread {
 
                     // handle request.
                     if (key.isReadable()) {
-                        LOG.debug("handle incoming request...");
                         this.request(key);
                     }
                     // do response.
                     else if (key.isWritable()) {
-                        LOG.debug("handle outgoing response...");
                         this.response(key);
                     }
                 } catch (CancelledKeyException e) {
@@ -115,19 +129,15 @@ public class ChannelProcessor extends Thread {
 
     private void removeSocketChannel(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        String channelId = NioSelector.makeChannelId(socketChannel);
-        nioSelector.removeSocketChannel(channelId);
         key.cancel();
-        nioSelector.wakeup();
+        LOG.info("channel [{}] removed from the selector...", socketChannel);
+
+        // selector wakeup.
+        selector.wakeup();
     }
 
     private void request(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-
-        // channel id.
-        String channelId = NioSelector.makeChannelId(socketChannel);
-
-
         try {
             ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
             socketChannel.read(totalSizeBuffer);
@@ -143,47 +153,43 @@ public class ChannelProcessor extends Thread {
             byte[] messageBytes = new byte[totalSize];
             buffer.get(messageBytes);
 
-            LOG.info("request messages: [{}]", new String(messageBytes));
+            LOG.debug("request messages: [{}]", new String(messageBytes));
 
-            // TODO: create response.
-
-            byte[] responseBytes = ("this is response for request [" + new String(messageBytes) + "] from server in thread [" + Thread.currentThread().toString() + "]").getBytes();
-            int responseLength = responseBytes.length;
-            ByteBuffer responseBuffer = ByteBuffer.allocate(4 + responseLength);
-            responseBuffer.putInt(responseBytes.length);
-            responseBuffer.put(responseBytes);
-
-            nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
+            // TODO:
+            //  1. parse request header and body,
+            //  2. and then create metadata object for header and body.
+            //  3. attache the meta data object to this channel.
+            socketChannel.register(this.selector, SelectionKey.OP_WRITE, new String(messageBytes) + " as a metadata");
         } catch (IOException e) {
             LOG.warn(e.getMessage());
 
             removeSocketChannel(key);
-            LOG.warn("socket channel [{}] removed from selector...", channelId);
         }
     }
 
     private void response(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-
-        // channel id.
-        String channelId = NioSelector.makeChannelId(socketChannel);
         try {
-            ByteBuffer buffer = (ByteBuffer) key.attachment();
+            String requestMessage = (String) key.attachment();
+            byte[] responseBytes = ("this is response for request [" + requestMessage + "] from server in thread [" + Thread.currentThread().toString() + "]").getBytes();
 
-            if (buffer == null) {
-                return;
+            // TODO:
+            //  1. get metadata from attachment.
+            //  2. PROCESS THE REQUEST WITH METADATA(header, body, params, etc)
+            //  3. do response. e.g., write bytebuffer directly to the channel.
+
+            int responseLength = responseBytes.length;
+            ByteBuffer responseBuffer = ByteBuffer.allocate(4 + responseLength);
+            responseBuffer.putInt(responseBytes.length);
+            responseBuffer.put(responseBytes);
+
+            responseBuffer.flip();
+
+            while (responseBuffer.hasRemaining()) {
+                socketChannel.write(responseBuffer);
             }
 
-            buffer.rewind();
-
-            while (buffer.hasRemaining()) {
-                socketChannel.write(buffer);
-            }
-            LOG.info("response done for channel id: " + channelId);
-
-            buffer.clear();
-
-            this.nioSelector.interestOps(socketChannel, SelectionKey.OP_READ);
+            socketChannel.register(this.selector, SelectionKey.OP_READ);
         } catch (IOException e) {
             LOG.error("error: " + e.getMessage());
             removeSocketChannel(key);

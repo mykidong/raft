@@ -1,6 +1,5 @@
 package mykidong.raft;
 
-import mykidong.raft.server.NioServer;
 import mykidong.raft.server.RaftServer;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Test;

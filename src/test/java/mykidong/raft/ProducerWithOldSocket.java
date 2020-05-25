@@ -28,7 +28,7 @@ public class ProducerWithOldSocket {
         ExecutorService executor = Executors.newFixedThreadPool(50);
         List<Future<String>> futureList = new ArrayList<Future<String>>();
 
-        int TASK_MAX = 100;
+        int TASK_MAX = 200;
         for(int x = 0; x < TASK_MAX; x++) {
             Future<String> future = executor.submit(ProducerWithOldSocket::sendSimpleMessages);
             futureList.add(future);
@@ -36,7 +36,8 @@ public class ProducerWithOldSocket {
 
         for (Future<String> fut : futureList) {
             try {
-                LOG.info(new Date() + "::" + fut.get());
+                String result = new Date() + "::" + fut.get();
+//                LOG.info(result);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
@@ -57,7 +58,7 @@ public class ProducerWithOldSocket {
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
 
-        int MAX = 5;
+        int MAX = 2000;
 
         List<String> responses = new ArrayList<>();
 
@@ -76,7 +77,7 @@ public class ProducerWithOldSocket {
             out.write(requestBytes);
             out.flush();
 
-            LOG.info("request sent..." + i);
+//            LOG.info("request sent..." + i);
 
 
             // Response.
@@ -92,13 +93,13 @@ public class ProducerWithOldSocket {
 
             responses.add(response);
 
-            LOG.info(response);
-            LOG.info("===========================================================");
+//            LOG.info(response);
+//            LOG.info("===========================================================");
 
             buffer.clear();
         }
 
-        String prettyJson = JsonWriter.formatJson(JsonUtils.toJson(new ObjectMapper(), responses));
+        String prettyJson = JsonUtils.jsonPretty(responses);
 
         return prettyJson;
     }

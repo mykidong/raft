@@ -52,8 +52,11 @@ public class SocketServer extends Thread {
             // server socket registered for accept.
             serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
 
+            LOG.info("server socket is listening on {} ...", this.port);
+
             while (!shutdown) {
                 int readyChannels = this.selector.select();
+
                 if (readyChannels == 0) {
                     continue;
                 }
@@ -84,12 +87,10 @@ public class SocketServer extends Thread {
 
         SocketChannel socketChannel = serverSocketChannel.accept();
         socketChannel.configureBlocking(false);
-        socketChannel.socket().setTcpNoDelay(true);
-        socketChannel.socket().setKeepAlive(true);
 
         LOG.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
-        // put socket channel to read channel processor.
+        // put socket channel to the queue of the channel processor.
         this.getNextChannelProcessor().putSocketChannel(socketChannel);
     }
 

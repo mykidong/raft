@@ -25,9 +25,12 @@ public class RaftServer {
         // blocking queue size.
         int queueSize = 4;
 
+        // channel processor count.
+        int channelProcessorCount = 10;
+
         // channel processors.
-        List<ChannelProcessor> channelProcessors = new ArrayList<>();
-        for(int i = 0; i < 5; i++)
+        List<ChannelProcessor> channelProcessors = new ArrayList<>(channelProcessorCount);
+        for(int i = 0; i < channelProcessorCount; i++)
         {
             channelProcessors.add(new ChannelProcessor(socketChannelQueuePollTimeout, queueSize));
         }
@@ -42,7 +45,5 @@ public class RaftServer {
 
         // start socket server.
         socketServer.start();
-
-        LOG.info("socket server is listening on " + port + " ...");
     }
 }
