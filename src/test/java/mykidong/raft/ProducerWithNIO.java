@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -38,9 +39,14 @@ public class ProducerWithNIO {
         socketChannel.connect(new InetSocketAddress("localhost", port));
 
         while (true) {
-            int readyChannels = selector.select();
-            if (readyChannels == 0) {
-                continue;
+            try {
+                int readyChannels = selector.select();
+                if (readyChannels == 0) {
+                    continue;
+                }
+            } catch (ClosedSelectorException e) {
+                LOG.warn(e.getMessage());
+                break;
             }
 
             Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
@@ -121,15 +127,16 @@ public class ProducerWithNIO {
             socketChannel.write(buffer);
         }
 
-        buffer.clear();
-
-        // switch to read.
-        socketChannel.register(this.selector, SelectionKey.OP_READ);
-
         // if the send count reaches to the max, close socket channel.
         if(count == 100)
         {
             socketChannel.close();
+            key.cancel();
+            this.selector.close();
+            return;
         }
+
+        // switch to read.
+        socketChannel.register(this.selector, SelectionKey.OP_READ);
     }
 }
