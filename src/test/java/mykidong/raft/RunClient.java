@@ -33,8 +33,8 @@ public class RunClient {
 
         long start = System.currentTimeMillis();
 
-        int TASK_MAX = 20;
-        int messageCount = 100000;
+        int TASK_MAX = 2;
+        int messageCount = 100;
         for(int i = 0; i < TASK_MAX; i++) {
             Future<String> future = executor.submit(() -> {
                 return sendSimpleMessages(messageCount);
@@ -50,7 +50,6 @@ public class RunClient {
                 e.printStackTrace();
             }
         }
-
         LOG.info("tps all: [{}]", ((double)(TASK_MAX * messageCount) / (double)(System.currentTimeMillis() - start)) * 1000);
 
         executor.shutdown();
@@ -58,7 +57,7 @@ public class RunClient {
 
     @Test
     public void runSingleClient() throws Exception {
-        String tps = sendSimpleMessages(1000);
+        String tps = sendSimpleMessages(500);
         LOG.info("tps: [{}]", tps);
     }
 
@@ -88,13 +87,17 @@ public class RunClient {
         ByteBuffer buffer = ByteBuffer.allocate(4 + messageLength);
         buffer.putInt(messageBytes.length);
         buffer.put(messageBytes);
-        buffer.flip();
 
         return buffer;
     }
 
     private static void printResponse(ByteBuffer buffer) {
         buffer.rewind();
-        LOG.debug("response: [{}]", new String(buffer.array()));
+
+        int size = buffer.getInt();
+        byte[] responseBytes = new byte[size];
+        buffer.get(responseBytes);
+
+        LOG.debug("response: [{}]", new String(responseBytes));
     }
 }

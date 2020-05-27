@@ -47,7 +47,8 @@ public class ProducerWithOldSocket {
 
     @Test
     public void runSingleClient() throws Exception {
-        sendSimpleMessages();
+        String json = sendSimpleMessages();
+        LOG.info("result: [{}]", json);
     }
 
 
@@ -58,7 +59,7 @@ public class ProducerWithOldSocket {
         OutputStream out = clientSocket.getOutputStream();
         InputStream in = clientSocket.getInputStream();
 
-        int MAX = 2000;
+        int MAX = 100;
 
         List<String> responses = new ArrayList<>();
 
