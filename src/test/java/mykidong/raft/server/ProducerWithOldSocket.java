@@ -1,7 +1,5 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
-import com.cedarsoftware.util.io.JsonWriter;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import mykidong.raft.util.JsonUtils;
 import org.junit.Test;
 import org.slf4j.Logger;

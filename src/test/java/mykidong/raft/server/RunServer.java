@@ -1,6 +1,5 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
-import mykidong.raft.server.RaftServer;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Test;
 import org.slf4j.Logger;

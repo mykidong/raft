@@ -1,4 +1,4 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
 import mykidong.raft.client.Client;
 import mykidong.raft.client.NioClient;

@@ -1,4 +1,4 @@
-package mykidong.raft;
+package mykidong.raft.server;
 
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
