@@ -12,9 +12,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class SocketClient extends Thread {
+public class SocketChannelClient extends Thread {
 
-    private static Logger LOG = LoggerFactory.getLogger(SocketClient.class);
+    private static Logger LOG = LoggerFactory.getLogger(SocketChannelClient.class);
 
     private Selector selector;
     private String host;
@@ -22,10 +22,12 @@ public class SocketClient extends Thread {
     private boolean ready = false;
     private BlockingQueue<ByteBuffer> requestQueue;
     private BlockingQueue<ByteBuffer> responseQueue;
+    private long pollTimeout;
 
-    public SocketClient(String host, int port) {
+    public SocketChannelClient(String host, int port, long pollTimeout) {
         this.host = host;
         this.port = port;
+        this.pollTimeout = pollTimeout;
         this.requestQueue = new LinkedBlockingQueue<>();
         this.responseQueue = new LinkedBlockingQueue<>();
     }
@@ -38,7 +40,7 @@ public class SocketClient extends Thread {
         }
     }
 
-    public ByteBuffer sendMessage(ByteBuffer requestBuffer) {
+    public ByteBuffer request(ByteBuffer requestBuffer) {
         while (!ready)
         {
             LOG.info("client not ready...");
@@ -57,7 +59,7 @@ public class SocketClient extends Thread {
         while(true) {
             if(this.responseQueue.isEmpty()) {
                 try {
-                    responseBuffer = responseQueue.poll(100, TimeUnit.MILLISECONDS);
+                    responseBuffer = responseQueue.poll(this.pollTimeout, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     LOG.error(e.getMessage());
                 }
@@ -98,8 +100,6 @@ public class SocketClient extends Thread {
             this.responseQueue.put(all);
 
             socketChannel.register(this.selector, SelectionKey.OP_WRITE);
-
-            LOG.debug("response: [{}]", new String(buffer.array()));
         } catch (ClosedChannelException e) {
             LOG.error(e.getMessage());
         } catch (IOException e) {
@@ -117,7 +117,7 @@ public class SocketClient extends Thread {
             while(true) {
                 if(this.requestQueue.isEmpty()) {
                     try {
-                        request = requestQueue.poll(100, TimeUnit.MILLISECONDS);
+                        request = requestQueue.poll(this.pollTimeout, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         LOG.error(e.getMessage());
                     }
@@ -149,7 +149,7 @@ public class SocketClient extends Thread {
             SocketChannel socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(false);
             socketChannel.register(selector, SelectionKey.OP_CONNECT);
-            socketChannel.connect(new InetSocketAddress("localhost", port));
+            socketChannel.connect(new InetSocketAddress(this.host, port));
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }

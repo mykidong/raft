@@ -40,10 +40,10 @@ public class RaftServer {
             channelProcessor.start();
         }
 
-        // socket server.
-        SocketServer socketServer = new SocketServer(this.port, channelProcessors);
+        // nio server.
+        NioServer nioServer = new NioServer(this.port, channelProcessors);
 
-        // start socket server.
-        socketServer.start();
+        // start nio server.
+        nioServer.start();
     }
 }

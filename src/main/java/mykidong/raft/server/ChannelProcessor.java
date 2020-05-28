@@ -153,8 +153,6 @@ public class ChannelProcessor extends Thread {
             byte[] messageBytes = new byte[totalSize];
             buffer.get(messageBytes);
 
-            LOG.debug("request messages: [{}]", new String(messageBytes));
-
             // TODO:
             //  1. parse request header and body,
             //  2. and then create metadata object for header and body.

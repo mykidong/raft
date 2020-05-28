@@ -19,15 +19,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class NioServer extends Thread {
+public class SingleThreadNioServer extends Thread {
 
-    private static Logger LOG = LoggerFactory.getLogger(NioServer.class);
+    private static Logger LOG = LoggerFactory.getLogger(SingleThreadNioServer.class);
 
     private Selector selector;
     private boolean shutdown = false;
     private int port;
 
-    public NioServer(int port) {
+    public SingleThreadNioServer(int port) {
         this.port = port;
     }
 

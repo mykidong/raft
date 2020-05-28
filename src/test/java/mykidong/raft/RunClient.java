@@ -1,6 +1,8 @@
 package mykidong.raft;
 
-import mykidong.raft.client.SocketClient;
+import mykidong.raft.client.Client;
+import mykidong.raft.client.NioClient;
+import mykidong.raft.client.OldSocketClient;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,8 +35,8 @@ public class RunClient {
 
         long start = System.currentTimeMillis();
 
-        int TASK_MAX = 2;
-        int messageCount = 100;
+        int TASK_MAX = 3;
+        int messageCount = 400000;
         for(int i = 0; i < TASK_MAX; i++) {
             Future<String> future = executor.submit(() -> {
                 return sendSimpleMessages(messageCount);
@@ -57,23 +59,88 @@ public class RunClient {
 
     @Test
     public void runSingleClient() throws Exception {
-        String tps = sendSimpleMessages(500);
+        String tps = sendSimpleMessages(10000);
         LOG.info("tps: [{}]", tps);
     }
 
-    private static String sendSimpleMessages(int count) {
+
+    @Test
+    public void runMultipleClientsWithOldSocket() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+        List<Future<String>> futureList = new ArrayList<Future<String>>();
+
+        long start = System.currentTimeMillis();
+
+        int TASK_MAX = 10;
+        int messageCount = 400000;
+        for(int i = 0; i < TASK_MAX; i++) {
+            Future<String> future = executor.submit(() -> {
+                return sendSimpleMessagesWithOldSocketClient(messageCount);
+            });
+            futureList.add(future);
+        }
+
+        for (Future<String> fut : futureList) {
+            try {
+                String result = new Date() + "::" + fut.get();
+                LOG.info(result);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+        LOG.info("tps all: [{}]", ((double)(TASK_MAX * messageCount) / (double)(System.currentTimeMillis() - start)) * 1000);
+
+        executor.shutdown();
+    }
+
+
+    @Test
+    public void runSingleClientWithOldSocket() throws Exception {
+        String tps = sendSimpleMessagesWithOldSocketClient(10000);
+        LOG.info("tps: [{}]", tps);
+    }
+
+
+    /**
+     * send messages with old socket client.
+     *
+     */
+    private static String sendSimpleMessagesWithOldSocketClient(int count) {
 
         String host = "localhost";
         int port = 9912;
-        SocketClient client = new SocketClient(host, port);
-        client.start();
+        Client client = new OldSocketClient(host, port);
 
         long start = System.currentTimeMillis();
         int MAX = count;
         for(int i = 0; i < MAX; i++) {
             ByteBuffer buffer = buildRequest(i);
 
-            ByteBuffer responseBuffer = client.sendMessage(buffer);
+            ByteBuffer responseBuffer = client.doRequest(buffer);
+            printResponse(responseBuffer);
+        }
+        String tps = "tps: " + ((double)MAX / (double)(System.currentTimeMillis() - start)) * 1000;
+
+        return tps;
+    }
+
+
+    /**
+     * send messages with nio socket channel client.
+     */
+    private static String sendSimpleMessages(int count) {
+
+        String host = "localhost";
+        int port = 9912;
+        long pollTimeout = 100;
+        Client client = new NioClient(host, port, pollTimeout);
+
+        long start = System.currentTimeMillis();
+        int MAX = count;
+        for(int i = 0; i < MAX; i++) {
+            ByteBuffer buffer = buildRequest(i);
+
+            ByteBuffer responseBuffer = client.doRequest(buffer);
             printResponse(responseBuffer);
         }
         String tps = "tps: " + ((double)MAX / (double)(System.currentTimeMillis() - start)) * 1000;

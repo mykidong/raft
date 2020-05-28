@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SocketServer extends Thread {
+public class NioServer extends Thread {
 
-    private static Logger LOG = LoggerFactory.getLogger(SocketServer.class);
+    private static Logger LOG = LoggerFactory.getLogger(NioServer.class);
 
     private Selector selector;
     private boolean shutdown = false;
@@ -24,7 +24,7 @@ public class SocketServer extends Thread {
     private Random random;
     private AtomicLong socketChannelCount = new AtomicLong(0);
 
-    public SocketServer(int port, List<ChannelProcessor> channelProcessors) {
+    public NioServer(int port, List<ChannelProcessor> channelProcessors) {
         this.port = port;
         this.channelProcessors = channelProcessors;
         this.random = new Random();
