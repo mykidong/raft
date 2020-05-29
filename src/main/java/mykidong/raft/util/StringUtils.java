@@ -9,6 +9,10 @@ public class StringUtils {
 
     private static Logger LOG = LoggerFactory.getLogger(StringUtils.class);
 
+    public static byte[] getBytes(String str) {
+        return getBytes(str, "UTF-8");
+    }
+
     public static byte[] getBytes(String str, String charset) {
         try {
             return str.getBytes(charset);
@@ -16,6 +20,10 @@ public class StringUtils {
             LOG.error(e.getMessage());
             return null;
         }
+    }
+
+    public static String toString(byte[] bytes) {
+        return toString(bytes, "UTF-8");
     }
 
     public static String toString(byte[] bytes, String charset) {

@@ -35,13 +35,13 @@ public class BaseRequestHeader implements Translatable<BaseRequestHeader>{
         short clientIdSize = buffer.getShort();
         byte[] clientIdBytes = new  byte[clientIdSize];
         buffer.get(clientIdBytes);
-        this.clientId = StringUtils.toString(clientIdBytes, "UTF-8");
+        this.clientId = StringUtils.toString(clientIdBytes);
 
         buildBuffer();
     }
 
     private void buildBuffer() {
-        byte[] clientIdBytes = StringUtils.getBytes(clientId, "UTF-8");
+        byte[] clientIdBytes = StringUtils.getBytes(clientId);
 
         int size = 0;
         size += 2; // api.
