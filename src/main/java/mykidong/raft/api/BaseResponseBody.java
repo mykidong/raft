@@ -2,7 +2,7 @@ package mykidong.raft.api;
 
 import java.nio.ByteBuffer;
 
-public class BaseResponseBody implements Translatable<BaseResponseBody>{
+public class BaseResponseBody implements Translatable<BaseResponseBody>, Bufferable{
     private short errorCode;
     private ByteBuffer buffer;
 
@@ -18,7 +18,8 @@ public class BaseResponseBody implements Translatable<BaseResponseBody>{
         buildBuffer();
     }
 
-    private void buildBuffer() {
+    @Override
+    public void buildBuffer() {
         int size = 0;
         size += 2; // errorCode.
 

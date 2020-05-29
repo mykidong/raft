@@ -7,7 +7,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 
-public class RequestResponse<H, B> implements Translatable<RequestResponse> {
+public class RequestResponse<H, B> implements Translatable<RequestResponse>, Bufferable {
     private static Logger LOG = LoggerFactory.getLogger(RequestResponse.class);
 
     private Translatable<H> header;
@@ -42,7 +42,8 @@ public class RequestResponse<H, B> implements Translatable<RequestResponse> {
         buildBuffer();
     }
 
-    private void buildBuffer() {
+    @Override
+    public void buildBuffer() {
         ByteBuffer headerBuffer = header.toBuffer();
         headerBuffer.rewind();
         int headerSize = headerBuffer.remaining();

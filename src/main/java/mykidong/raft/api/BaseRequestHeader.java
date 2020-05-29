@@ -3,11 +3,10 @@ package mykidong.raft.api;
 import mykidong.raft.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.util.calendar.LocalGregorianCalendar;
 
 import java.nio.ByteBuffer;
 
-public class BaseRequestHeader implements Translatable<BaseRequestHeader>{
+public class BaseRequestHeader implements Translatable<BaseRequestHeader>, Bufferable{
     private static Logger LOG = LoggerFactory.getLogger(BaseRequestHeader.class);
 
     private short apiId;
@@ -40,7 +39,8 @@ public class BaseRequestHeader implements Translatable<BaseRequestHeader>{
         buildBuffer();
     }
 
-    private void buildBuffer() {
+    @Override
+    public void buildBuffer() {
         byte[] clientIdBytes = StringUtils.getBytes(clientId);
 
         int size = 0;

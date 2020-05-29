@@ -58,7 +58,7 @@ public class LeaderElectionTest {
         LeaderElectionRequest.LeaderElectionRequestHeader headerWithBuffer =
                 leaderElectionRequestWithBuffer.getHeader().toObject();
 
-        BaseRequestHeader retBaseRequestHeader = headerWithBuffer.getBaseRequestHeader();
+        BaseRequestHeader retBaseRequestHeader = headerWithBuffer.getBaseHeaderBody().toObject();
         Assert.assertTrue(apiId == retBaseRequestHeader.getApiId());
         Assert.assertTrue(version == retBaseRequestHeader.getVersion());
         Assert.assertTrue(messageId == retBaseRequestHeader.getMessageId());
@@ -111,10 +111,10 @@ public class LeaderElectionTest {
 
         // response header.
         LeaderElectionResponse.LeaderElectionResponseHeader headerWithBuffer = leaderElectionResponseWithBuffer.getHeader().toObject();
-        Assert.assertTrue(correlationId == headerWithBuffer.getBaseResponseHeader().toObject().getCorrelationId());
+        Assert.assertTrue(correlationId == headerWithBuffer.getBaseHeaderBody().toObject().getCorrelationId());
 
         LeaderElectionResponse.LeaderElectionResponseBody bodyWithBuffer = leaderElectionResponseWithBuffer.getBody().toObject();
-        BaseResponseBody baseResponseBodyWithBuffer = bodyWithBuffer.getBaseResponseBody().toObject();
+        BaseResponseBody baseResponseBodyWithBuffer = bodyWithBuffer.getBaseHeaderBody().toObject();
         Assert.assertTrue(errorCode == baseResponseBodyWithBuffer.getErrorCode());
 
         if(errorCode == 0) {

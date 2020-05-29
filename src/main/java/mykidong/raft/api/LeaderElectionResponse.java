@@ -5,53 +5,30 @@ import mykidong.raft.util.StringUtils;
 import java.nio.ByteBuffer;
 
 public class LeaderElectionResponse {
-    public static class LeaderElectionResponseHeader implements Translatable<LeaderElectionResponseHeader> {
-
-        private Translatable<BaseResponseHeader> baseResponseHeader;
-        private ByteBuffer buffer;
-
+    public static class LeaderElectionResponseHeader
+            extends AbstractBaseHeaderBody<LeaderElectionResponseHeader, BaseResponseHeader>
+            implements Translatable<LeaderElectionResponseHeader> {
         public LeaderElectionResponseHeader(Translatable<BaseResponseHeader> baseResponseHeader) {
-            this.baseResponseHeader = baseResponseHeader;
+            super(baseResponseHeader);
 
             buildBuffer();
         }
 
         public LeaderElectionResponseHeader(ByteBuffer buffer) {
-            this.baseResponseHeader = new BaseResponseHeader(buffer);
+            super(buffer, BaseResponseHeader.class);
 
             buildBuffer();
         }
-
-        private void buildBuffer() {
-            buffer = this.baseResponseHeader.toBuffer();
-        }
-
-        public Translatable<BaseResponseHeader> getBaseResponseHeader() {
-            return baseResponseHeader;
-        }
-
-        @Override
-        public ByteBuffer toBuffer() {
-            return this.buffer;
-        }
-
-        @Override
-        public LeaderElectionResponseHeader toObject() {
-            return this;
-        }
     }
 
-    public static class LeaderElectionResponseBody implements Translatable<LeaderElectionResponseBody>{
-
-        private Translatable<BaseResponseBody> baseResponseBody;
+    public static class LeaderElectionResponseBody
+            extends AbstractBaseResponseBody<LeaderElectionResponseBody>
+            implements Translatable<LeaderElectionResponseBody>{
         private String followerId;
-        private ByteBuffer buffer;
-        private short errorCode = -1;
 
         public LeaderElectionResponseBody(Translatable<BaseResponseBody> baseResponseBody,
                                           String followerId) {
-            this.baseResponseBody = baseResponseBody;
-            errorCode = this.baseResponseBody.toObject().getErrorCode();
+            super(baseResponseBody);
 
             // no errors.
             if(errorCode == 0) {
@@ -61,10 +38,8 @@ public class LeaderElectionResponse {
             buildBuffer();
         }
 
-
         public LeaderElectionResponseBody(ByteBuffer buffer) {
-            this.baseResponseBody = new BaseResponseBody(buffer);
-            errorCode = this.baseResponseBody.toObject().getErrorCode();
+            super(buffer);
 
             // no errors.
             if(errorCode == 0) {
@@ -77,8 +52,9 @@ public class LeaderElectionResponse {
             buildBuffer();
         }
 
-        private void buildBuffer() {
-            ByteBuffer baseResponseBodyBuffer = baseResponseBody.toBuffer();
+        @Override
+        public void buildBuffer() {
+            ByteBuffer baseResponseBodyBuffer = baseHeaderBody.toBuffer();
             baseResponseBodyBuffer.rewind();
             int baseResponseBodySize = baseResponseBodyBuffer.remaining();
 
@@ -106,22 +82,8 @@ public class LeaderElectionResponse {
             }
         }
 
-        public Translatable<BaseResponseBody> getBaseResponseBody() {
-            return baseResponseBody;
-        }
-
         public String getFollowerId() {
             return followerId;
-        }
-
-        @Override
-        public ByteBuffer toBuffer() {
-            return this.buffer;
-        }
-
-        @Override
-        public LeaderElectionResponseBody toObject() {
-            return this;
         }
     }
 }

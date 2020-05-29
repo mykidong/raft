@@ -2,7 +2,7 @@ package mykidong.raft.api;
 
 import java.nio.ByteBuffer;
 
-public class BaseResponseHeader implements Translatable<BaseResponseHeader>{
+public class BaseResponseHeader implements Translatable<BaseResponseHeader>, Bufferable{
     private int correlationId;
     private ByteBuffer buffer;
 
@@ -18,7 +18,8 @@ public class BaseResponseHeader implements Translatable<BaseResponseHeader>{
         buildBuffer();
     }
 
-    private void buildBuffer() {
+    @Override
+    public void buildBuffer() {
         int size = 0;
         size += 4; // correlationId.
 

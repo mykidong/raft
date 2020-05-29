@@ -1,58 +1,40 @@
 package mykidong.raft.api;
 
 import mykidong.raft.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
 public class LeaderElectionRequest {
-    public static class LeaderElectionRequestHeader implements Translatable<LeaderElectionRequestHeader>  {
-        private static Logger LOG = LoggerFactory.getLogger(LeaderElectionRequestHeader.class);
+    public static class LeaderElectionRequestHeader
+            extends AbstractBaseHeaderBody<LeaderElectionRequestHeader, BaseRequestHeader>
+            implements Translatable<LeaderElectionRequestHeader> {
 
-        private Translatable<BaseRequestHeader> baseRequestHeader;
-        private ByteBuffer buffer;
         public LeaderElectionRequestHeader(Translatable<BaseRequestHeader> baseRequestHeader) {
-            this.baseRequestHeader = baseRequestHeader;
+            super(baseRequestHeader);
 
             buildBuffer();
         }
         public LeaderElectionRequestHeader(ByteBuffer buffer) {
-            baseRequestHeader = new BaseRequestHeader(buffer);
+            super(buffer, BaseRequestHeader.class);
 
             buildBuffer();
         }
-
-        private void buildBuffer() {
-            buffer = this.baseRequestHeader.toBuffer();
-        }
-
-        public BaseRequestHeader getBaseRequestHeader() {
-            return baseRequestHeader.toObject();
-        }
-
-        @Override
-        public ByteBuffer toBuffer() {
-            return this.buffer;
-        }
-
-        @Override
-        public LeaderElectionRequestHeader toObject() {
-            return this;
-        }
     }
 
-    public static class LeaderElectionRequestBody implements Translatable<LeaderElectionRequestBody> {
+    public static class LeaderElectionRequestBody
+            extends AbstractBaseHeaderBody<LeaderElectionRequestBody, BaseRequestBody>
+            implements Translatable<LeaderElectionRequestBody>, Bufferable {
         private String candidateId;
         private int newTermNumber;
         private int lastTermNumber;
         private long lastLogIndexNumber;
-        private ByteBuffer buffer;
 
         public LeaderElectionRequestBody(String candidateId,
                                          int newTermNumber,
                                          int lastTermNumber,
                                          long lastLogIndexNumber) {
+            super(null);
+
             this.candidateId = candidateId;
             this.newTermNumber = newTermNumber;
             this.lastTermNumber = lastTermNumber;
@@ -62,6 +44,8 @@ public class LeaderElectionRequest {
         }
 
         public LeaderElectionRequestBody(ByteBuffer buffer) {
+            super(null);
+
             short candidateIdSize = buffer.getShort();
             byte[] candidateIdBytes = new byte[candidateIdSize];
             buffer.get(candidateIdBytes);
@@ -73,7 +57,8 @@ public class LeaderElectionRequest {
             buildBuffer();
         }
 
-        private void buildBuffer() {
+        @Override
+        public void buildBuffer() {
             byte[] candidateIdBytes = StringUtils.getBytes(this.candidateId);
             int candidateIdSize = candidateIdBytes.length;
 
@@ -105,16 +90,6 @@ public class LeaderElectionRequest {
 
         public long getLastLogIndexNumber() {
             return lastLogIndexNumber;
-        }
-
-        @Override
-        public ByteBuffer toBuffer() {
-            return this.buffer;
-        }
-
-        @Override
-        public LeaderElectionRequestBody toObject() {
-            return this;
         }
     }
 }
