@@ -86,7 +86,7 @@ public class LeaderElectionTest {
                 new LeaderElectionResponse.LeaderElectionResponseHeader(baseResponseHeader);
 
         // base response body.
-        short errorCode = 1;
+        short errorCode = 0;
         Translatable<BaseResponseBody> baseResponseBody = new BaseResponseBody(errorCode);
 
         // response body.
@@ -117,10 +117,13 @@ public class LeaderElectionTest {
         BaseResponseBody baseResponseBodyWithBuffer = bodyWithBuffer.getBaseHeaderBody().toObject();
         Assert.assertTrue(errorCode == baseResponseBodyWithBuffer.getErrorCode());
 
+        // if errorCode is 0, all response body fields can be retrieved.
         if(errorCode == 0) {
             LOG.info("followerId: [{}]", bodyWithBuffer.getFollowerId());
             Assert.assertTrue(followerId.equals(bodyWithBuffer.getFollowerId()));
         }
+        // if errorCode is not 0,
+        // all the other fields in response body except errorCode have not been set in response.
         else {
             Assert.assertNull(bodyWithBuffer.getFollowerId());
         }
