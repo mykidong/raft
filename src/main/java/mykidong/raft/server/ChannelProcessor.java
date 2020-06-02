@@ -1,5 +1,10 @@
 package mykidong.raft.server;
 
+import mykidong.raft.api.BaseRequestHeader;
+import mykidong.raft.api.Attachment;
+import mykidong.raft.api.BufferUtils;
+import mykidong.raft.processor.Handlerable;
+import mykidong.raft.processor.RequestResponseHandler;
 import mykidong.raft.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +25,13 @@ public class ChannelProcessor extends Thread {
     private BlockingQueue<SocketChannel> socketChannelQueue;
     private Selector selector;
     private long pollTimeout;
+    private Handlerable handlerable;
 
     public ChannelProcessor(long pollTimeout, int queueSize) {
         this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);        
         this.pollTimeout = pollTimeout;
-        
+        handlerable = new RequestResponseHandler();
+
         // create new selector.
         newSelector();
     }
@@ -121,6 +128,7 @@ public class ChannelProcessor extends Thread {
                 } catch (CancelledKeyException e) {
                     LOG.error("cancelled key error: " + e.getMessage());
                 } catch (Exception e) {
+                    e.printStackTrace();
                     LOG.error(e.getMessage());
                 }
             }
@@ -150,14 +158,13 @@ public class ChannelProcessor extends Thread {
             socketChannel.read(buffer);
             buffer.rewind();
 
-            byte[] messageBytes = new byte[totalSize];
-            buffer.get(messageBytes);
+            // base request header.
+            BaseRequestHeader baseRequestHeader = new BaseRequestHeader(buffer);
+            buffer.rewind();
 
-            // TODO:
-            //  1. parse request header and body,
-            //  2. and then create metadata object for header and body.
-            //  3. attache the meta data object to this channel.
-            socketChannel.register(this.selector, SelectionKey.OP_WRITE, new String(messageBytes) + " as a metadata");
+            // handle request.
+            Attachment attachment = handlerable.handleRequest(baseRequestHeader, buffer);
+            socketChannel.register(this.selector, SelectionKey.OP_WRITE, attachment);
         } catch (IOException e) {
             LOG.warn(e.getMessage());
 
@@ -168,23 +175,12 @@ public class ChannelProcessor extends Thread {
     private void response(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
         try {
-            String requestMessage = (String) key.attachment();
-            byte[] responseBytes = ("this is response for request [" + requestMessage + "] from server in thread [" + Thread.currentThread().toString() + "]").getBytes();
+            Attachment attachment = (Attachment) key.attachment();
+            // handle response.
+            ByteBuffer responseMessageBuffer = BufferUtils.toMessageBuffer(handlerable.handleResponse(attachment));
 
-            // TODO:
-            //  1. get metadata from attachment.
-            //  2. PROCESS THE REQUEST WITH METADATA(header, body, params, etc)
-            //  3. do response. e.g., write bytebuffer directly to the channel.
-
-            int responseLength = responseBytes.length;
-            ByteBuffer responseBuffer = ByteBuffer.allocate(4 + responseLength);
-            responseBuffer.putInt(responseBytes.length);
-            responseBuffer.put(responseBytes);
-
-            responseBuffer.flip();
-
-            while (responseBuffer.hasRemaining()) {
-                socketChannel.write(responseBuffer);
+            while (responseMessageBuffer.hasRemaining()) {
+                socketChannel.write(responseMessageBuffer);
             }
 
             socketChannel.register(this.selector, SelectionKey.OP_READ);

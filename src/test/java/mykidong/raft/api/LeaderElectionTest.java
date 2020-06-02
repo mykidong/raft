@@ -1,5 +1,7 @@
 package mykidong.raft.api;
 
+import mykidong.raft.client.Client;
+import mykidong.raft.client.OldSocketClient;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,6 +20,68 @@ public class LeaderElectionTest {
         // log4j init.
         DOMConfigurator.configure(this.getClass().getResource("/log4j.xml"));
     }
+
+    @Test
+    public void sendRequest() throws Exception {
+        // ======================== request ==========================
+        // base request header.
+        short apiId = LeaderElectionRequest.API_ID;
+        short version = (short) 3;
+        int messageId = 1203004;
+        String clientId = "any-client-id";
+
+        Translatable<BaseRequestHeader> baseRequestHeader =
+                new BaseRequestHeader(apiId, version, messageId, clientId);
+        Translatable<LeaderElectionRequest.LeaderElectionRequestHeader> header =
+                new LeaderElectionRequest.LeaderElectionRequestHeader(baseRequestHeader);
+
+        // request body.
+        String candidateId = "any-candidate-id";
+        int newTermNumber = 350;
+        int lastTermNumber = 349;
+        long lastLogIndexNumber = 12030033L;
+        Translatable<LeaderElectionRequest.LeaderElectionRequestBody> body =
+                new LeaderElectionRequest.LeaderElectionRequestBody(candidateId, newTermNumber, lastTermNumber, lastLogIndexNumber);
+
+        // request.
+        RequestResponse<LeaderElectionRequest.LeaderElectionRequestHeader,
+                LeaderElectionRequest.LeaderElectionRequestBody> request = new RequestResponse<>(header, body);
+
+        // byte buffer from request object.
+        ByteBuffer requestBuffer = request.toBuffer();
+        requestBuffer.rewind();
+        LOG.debug("request buffer size: [{}]", requestBuffer.remaining());
+
+        // ======================== send request ==========================
+        String host = "localhost";
+        int port = 9912;
+        Client client = new OldSocketClient(host, port);
+        ByteBuffer requestMessageBuffer = BufferUtils.toMessageBuffer(requestBuffer);
+        ByteBuffer responseMessageBuffer = client.doRequest(requestMessageBuffer);
+        ByteBuffer responseBuffer = BufferUtils.toRequestResponseBuffer(responseMessageBuffer);
+
+        // ======================== response ==========================
+
+        RequestResponse<LeaderElectionResponse.LeaderElectionResponseHeader,
+                LeaderElectionResponse.LeaderElectionResponseBody> response =
+                new RequestResponse<>(responseBuffer, LeaderElectionResponse.LeaderElectionResponseHeader.class,
+                        LeaderElectionResponse.LeaderElectionResponseBody.class);
+
+        // response header.
+        LeaderElectionResponse.LeaderElectionResponseHeader responseHeader = response.getHeader().toObject();
+        Assert.assertTrue(messageId == responseHeader.getBaseHeaderBody().toObject().getCorrelationId());
+
+        LeaderElectionResponse.LeaderElectionResponseBody responseBody = response.getBody().toObject();
+        BaseResponseBody baseResponseBody = responseBody.getBaseHeaderBody().toObject();
+        short errorCode = baseResponseBody.getErrorCode();
+        if(errorCode == 0) {
+            Assert.assertNotNull(responseBody.getFollowerId());
+            LOG.debug("follower id: [{}]", responseBody.getFollowerId());
+        } else {
+            Assert.assertNull(responseBody.getFollowerId());
+        }
+    }
+
 
     @Test
     public void leaderElectionRequest() throws Exception {

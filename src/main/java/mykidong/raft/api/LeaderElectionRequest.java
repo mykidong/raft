@@ -5,6 +5,9 @@ import mykidong.raft.util.StringUtils;
 import java.nio.ByteBuffer;
 
 public class LeaderElectionRequest {
+
+    public static final short API_ID = 0;
+
     public static class LeaderElectionRequestHeader
             extends AbstractBaseHeaderBody<LeaderElectionRequestHeader, BaseRequestHeader>
             implements Translatable<LeaderElectionRequestHeader> {

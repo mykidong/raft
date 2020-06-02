@@ -7,18 +7,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 import java.util.TimerTask;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class LeaderElectionController extends Thread implements Controllable{
     private static Logger LOG = LoggerFactory.getLogger(LeaderElectionController.class);
 
-    public static final int OP_TRY_VOTE = 1 << 0;
+    public static final int OP_VOTE = 1 << 0;
     public static final int OP_VOTE_REQUEST_ARRIVED = 1 << 1;
-    public static final int OP_BECOME_LEADER = 1 << 3;
-    public static final int OP_HEARTBEAT_ARRIVED = 1 << 5;
+    public static final int OP_BECOME_LEADER = 1 << 2;
+    public static final int OP_HEARTBEAT_ARRIVED = 1 << 3;
 
-    private BlockingQueue<Object> queue;
     private long delayRangeGreaterThanEquals;
     private long delayRangeLessThan;
     private Random random;
@@ -26,7 +23,8 @@ public class LeaderElectionController extends Thread implements Controllable{
     private Schedulable heartbeatTimer;
     private long leaderPeriod;
     private long followerDelay;
-    private int currentState = OP_TRY_VOTE;
+    private int currentState = OP_VOTE;
+    private final Object lock = new Object();
 
     public LeaderElectionController(long delayRangeGreaterThanEquals,
                                     long delayRangeLessThan,
@@ -39,7 +37,6 @@ public class LeaderElectionController extends Thread implements Controllable{
         this.leaderPeriod = leaderPeriod;
         this.followerDelay = followerDelay;
         heartbeatTimer = new RaftTimer("Heartbeat Timer");
-        queue = new LinkedBlockingQueue<>();
     }
 
     private long getRandomDelay() {
@@ -47,34 +44,51 @@ public class LeaderElectionController extends Thread implements Controllable{
         return value + delayRangeGreaterThanEquals;
     }
 
+    private void pauseThread() {
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {
+                LOG.error(e.getMessage());
+            }
+        }
+    }
+
+    private void resumeThread() {
+        synchronized (lock) {
+            lock.notify();
+        }
+    }
+
     @Override
-    public void changeCurrentState(int ops) {
+    public void changeState(int ops) {
         currentState = ops;
 
-        if(currentState == OP_TRY_VOTE) {
-            voteTimer.cancel();
-        } else if(currentState == OP_VOTE_REQUEST_ARRIVED) {
-            heartbeatTimer.cancel();
-        } else if(currentState == OP_HEARTBEAT_ARRIVED) {
-            heartbeatTimer.cancel();
-        }
+        voteTimer.cancel();
+        heartbeatTimer.cancel();
+
+        resumeThread();
     }
 
     @Override
     public void run() {
         while (true) {
-            if(currentState == OP_TRY_VOTE) {
-                LOG.debug("current state: OP_TRY_VOTE");
+            if(currentState == OP_VOTE) {
+                LOG.debug("current state: OP_VOTE");
                 runVoteTimer();
+                pauseThread();
             } else if(currentState == OP_VOTE_REQUEST_ARRIVED) {
                 LOG.debug("current state: OP_VOTE_REQUEST_ARRIVED");
                 runFollowerHeartbeatTimer();
+                pauseThread();
             } else if(currentState == OP_HEARTBEAT_ARRIVED) {
                 LOG.debug("current state: OP_HEARTBEAT_ARRIVED");
                 runFollowerHeartbeatTimer();
+                pauseThread();
             } else if(currentState == OP_BECOME_LEADER) {
                 LOG.debug("current state: OP_BECOME_LEADER");
                 runLeaderHeartbeatTimer();
+                pauseThread();
             }
         }
     }
@@ -95,7 +109,6 @@ public class LeaderElectionController extends Thread implements Controllable{
         public void run() {
             // TODO: as leader, run timer for heartbeat timer to send leader alive info to the followers.
             LOG.debug("as leader, run timer for heartbeat timer to send leader alive info to the followers");
-            controllable.changeCurrentState(LeaderElectionController.OP_BECOME_LEADER);
         }
     }
 
@@ -113,9 +126,9 @@ public class LeaderElectionController extends Thread implements Controllable{
 
         @Override
         public void run() {
-            // TODO: if hearbeat timer timed out, signal to run vote timer as follower.
+            // TODO: if heartbeat timer timed out, signal to run vote timer as follower.
             LOG.debug("leader heartbeat timed out...");
-            controllable.changeCurrentState(LeaderElectionController.OP_TRY_VOTE);
+            controllable.changeState(LeaderElectionController.OP_VOTE);
         }
     }
 
@@ -140,7 +153,11 @@ public class LeaderElectionController extends Thread implements Controllable{
             //       if this candidate gets votes from the majority of the followers, it will become to leader.
             LOG.debug("send vote request as candidate to the followers...");
 
-            controllable.changeCurrentState(LeaderElectionController.OP_BECOME_LEADER);
+            // if this candidate gets votes from the majority of the followers, it will become to leader.
+            boolean gotMajorityVote = true;
+            if(gotMajorityVote) {
+                controllable.changeState(LeaderElectionController.OP_BECOME_LEADER);
+            }
         }
     }
 }

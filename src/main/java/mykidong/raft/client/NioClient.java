@@ -12,7 +12,7 @@ public class NioClient implements Client {
     }
 
     @Override
-    public ByteBuffer doRequest(ByteBuffer requestBuffer) {
-        return this.socketChannelClient.request(requestBuffer);
+    public ByteBuffer doRequest(ByteBuffer messageBuffer) {
+        return this.socketChannelClient.request(messageBuffer);
     }
 }

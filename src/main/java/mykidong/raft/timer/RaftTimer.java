@@ -25,7 +25,7 @@ public class RaftTimer implements Schedulable{
         if(timer != null) {
             timer.cancel();
             timer.purge();
-            LOG.debug("[{}] called...", name);
+            LOG.debug("[{}] cancelled...", name);
         }
     }
 
@@ -47,7 +47,7 @@ public class RaftTimer implements Schedulable{
 
     @Override
     public void runTimerOnceWithDelay(TimerTask task, long delay) {
-        LOG.debug("[{}] once with delay started ...", name);
+        LOG.debug("[{}] once with delay [{}] started ...", name, delay);
 
         timer = newTimer();
         timer.schedule(task, delay);

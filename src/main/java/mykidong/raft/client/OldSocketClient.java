@@ -38,10 +38,13 @@ public class OldSocketClient implements Client{
     }
 
     @Override
-    public ByteBuffer doRequest(ByteBuffer requestBuffer) {
+    public ByteBuffer doRequest(ByteBuffer messageBuffer) {
         try {
-            out.write(requestBuffer.array());
+            messageBuffer.rewind();
+            out.write(messageBuffer.array());
             out.flush();
+
+            LOG.debug("request sent...");
 
             // Response.
             byte[] totalSizeBytes = new byte[4];

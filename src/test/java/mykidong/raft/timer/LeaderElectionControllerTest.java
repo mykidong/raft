@@ -14,8 +14,14 @@ public class LeaderElectionControllerTest extends TestBase {
     @Test
     public void runTimerController() throws Exception {
         LeaderElectionController leaderElectionController =
-                new LeaderElectionController(150, 300, 500, 1000);
+                new LeaderElectionController(2000, 3000, 4000, 5000);
         leaderElectionController.start();
+
+        Thread.sleep(1000);
+        leaderElectionController.changeState(LeaderElectionController.OP_VOTE_REQUEST_ARRIVED);
+
+        Thread.sleep(3000);
+        leaderElectionController.changeState(LeaderElectionController.OP_HEARTBEAT_ARRIVED);
 
         Thread.sleep(Long.MAX_VALUE);
     }
