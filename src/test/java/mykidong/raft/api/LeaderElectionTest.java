@@ -2,24 +2,17 @@ package mykidong.raft.api;
 
 import mykidong.raft.client.Client;
 import mykidong.raft.client.OldSocketClient;
-import org.apache.log4j.xml.DOMConfigurator;
+import mykidong.raft.test.TestBase;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
-public class LeaderElectionTest {
+public class LeaderElectionTest extends TestBase {
 
     private static Logger LOG = LoggerFactory.getLogger(LeaderElectionTest.class);
-
-    @Before
-    public void init() throws Exception {
-        // log4j init.
-        DOMConfigurator.configure(this.getClass().getResource("/log4j.xml"));
-    }
 
     @Test
     public void sendRequest() throws Exception {

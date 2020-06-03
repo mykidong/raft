@@ -4,23 +4,23 @@ import mykidong.raft.util.StringUtils;
 
 import java.nio.ByteBuffer;
 
-public class LeaderElectionResponse {
-    public static class LeaderElectionResponseHeader
-            extends AbstractBaseResponseHeader<LeaderElectionResponseHeader> {
-        public LeaderElectionResponseHeader(Translatable<BaseResponseHeader> baseResponseHeader) {
+public class HeartbeatResponse {
+    public static class HeartbeatResponseHeader
+            extends AbstractBaseResponseHeader<HeartbeatResponseHeader> {
+        public HeartbeatResponseHeader(Translatable<BaseResponseHeader> baseResponseHeader) {
             super(baseResponseHeader);
         }
 
-        public LeaderElectionResponseHeader(ByteBuffer buffer) {
+        public HeartbeatResponseHeader(ByteBuffer buffer) {
             super(buffer);
         }
     }
 
-    public static class LeaderElectionResponseBody
-            extends AbstractBaseResponseBody<LeaderElectionResponseBody> {
+    public static class HeartbeatResponseBody
+            extends AbstractBaseResponseBody<HeartbeatResponseBody> {
         private String followerId;
 
-        public LeaderElectionResponseBody(Translatable<BaseResponseBody> baseResponseBody,
+        public HeartbeatResponseBody(Translatable<BaseResponseBody> baseResponseBody,
                                           String followerId) {
             super(baseResponseBody);
 
@@ -32,7 +32,7 @@ public class LeaderElectionResponse {
             buildBuffer();
         }
 
-        public LeaderElectionResponseBody(ByteBuffer buffer) {
+        public HeartbeatResponseBody(ByteBuffer buffer) {
             super(buffer);
 
             // no errors.

@@ -9,24 +9,19 @@ public class LeaderElectionRequest {
     public static final short API_ID = 0;
 
     public static class LeaderElectionRequestHeader
-            extends AbstractBaseHeaderBody<LeaderElectionRequestHeader, BaseRequestHeader>
-            implements Translatable<LeaderElectionRequestHeader> {
+            extends AbstractBaseRequestHeader<LeaderElectionRequestHeader> {
 
         public LeaderElectionRequestHeader(Translatable<BaseRequestHeader> baseRequestHeader) {
             super(baseRequestHeader);
 
-            buildBuffer();
         }
         public LeaderElectionRequestHeader(ByteBuffer buffer) {
-            super(buffer, BaseRequestHeader.class);
-
-            buildBuffer();
+            super(buffer);
         }
     }
 
     public static class LeaderElectionRequestBody
-            extends AbstractBaseHeaderBody<LeaderElectionRequestBody, BaseRequestBody>
-            implements Translatable<LeaderElectionRequestBody>, Bufferable {
+            extends AbstractBaseHeaderBody<LeaderElectionRequestBody, BaseRequestBody> {
         private String candidateId;
         private int newTermNumber;
         private int lastTermNumber;
