@@ -27,6 +27,9 @@
 
 		<!-- kryo -->
 		<kryo.version>4.0.2</kryo.version>
+
+		<!-- joda time -->
+		<joda-time.version>2.9.9</joda-time.version>
 	</properties>
 
 	<dependencies>
@@ -76,6 +79,11 @@
 			<artifactId>kryo-shaded</artifactId>
 			<version>${kryo.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>${joda-time.version}</version>
+        </dependency>
     </dependencies>
 	<build>
 		<pluginManagement>

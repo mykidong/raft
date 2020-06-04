@@ -34,11 +34,8 @@ public class RocksDBKVStore<V> implements KVStore<String, V> {
         if(rocksdbMap == null) {
             synchronized(lock) {
                 if(rocksdbMap == null) {
-
                     rocksdbMap = new ConcurrentHashMap<>();
-
                     RocksDBKVStore rocksDBKVStore = new RocksDBKVStore(dbPath);
-
                     rocksdbMap.put(dbPath, rocksDBKVStore);
                     LOG.info("map is initialized, dbPath: [" + dbPath + "]");
                 }
