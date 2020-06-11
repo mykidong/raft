@@ -3,7 +3,7 @@ package mykidong.raft.db;
 import java.nio.ByteBuffer;
 
 public interface Storable {
-    long saveBlock(long term, long index, String keyPath, int blockNumber, ByteBuffer blockBuffer);
+    long saveBlock(long term, long index, String keyPath, long blockSize, int blockNumber, ByteBuffer blockBuffer);
     long getLastTerm();
     long getLastIndex();
     void saveLastIndex(long index);

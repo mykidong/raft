@@ -7,7 +7,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 
 public class FileUtils {
     private static Logger LOG = LoggerFactory.getLogger(FileUtils.class);
@@ -22,6 +24,17 @@ public class FileUtils {
         } catch (IOException e) {
             LOG.error(e.getMessage());
             return null;
+        }
+    }
+
+    public static void deleteDirectory(String path) {
+        try {
+            Files.walk(Paths.get(path))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
         }
     }
 

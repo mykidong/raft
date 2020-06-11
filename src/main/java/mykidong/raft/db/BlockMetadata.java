@@ -7,8 +7,9 @@ public class BlockMetadata {
     private long term;
     private long index;
     private String blockFilePath;
-    private int position;
-    private int size;
+    private long blockSize;
+    private long position;
+    private long length;
     private long saveTimestamp;
     private boolean committed;
     private long commitTimestamp;
@@ -18,16 +19,18 @@ public class BlockMetadata {
     public BlockMetadata(long term,
                          long index,
                          String blockFilePath,
-                         int position,
-                         int size,
+                         long blockSize,
+                         long position,
+                         long length,
                          long saveTimestamp,
                          boolean committed,
                          long commitTimestamp) {
         this.term = term;
         this.index = index;
         this.blockFilePath = blockFilePath;
+        this.blockSize = blockSize;
         this.position = position;
-        this.size = size;
+        this.length = length;
         this.saveTimestamp = saveTimestamp;
         this.committed = committed;
         this.commitTimestamp = commitTimestamp;
@@ -58,12 +61,16 @@ public class BlockMetadata {
         return blockFilePath;
     }
 
-    public int getPosition() {
+    public long getBlockSize() {
+        return blockSize;
+    }
+
+    public long getPosition() {
         return position;
     }
 
-    public int getSize() {
-        return size;
+    public long getLength() {
+        return length;
     }
 
     public long getSaveTimestamp() {

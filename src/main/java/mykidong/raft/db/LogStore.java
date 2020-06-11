@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -24,6 +24,8 @@ public class LogStore implements Storable {
     private String logPath;
     private RocksDBKVStore dbBlock;
     private RocksDBKVStore dbLastTermAndIndex;
+    // TODO: block size can be configured.
+    private static final long BLOCK_SIZE = 256 * 1024 * 1024; // 256MB
 
     public LogStore(String dbPathForBlock,
                     String logPath,
@@ -35,7 +37,7 @@ public class LogStore implements Storable {
     }
 
     @Override
-    public long saveBlock(long term, long index, String keyPath, int blockNumber, ByteBuffer blockBuffer) {
+    public long saveBlock(long term, long index, String keyPath, long blockSize, int blockNumber, ByteBuffer blockBuffer) {
         keyPath = StringUtils.removeSuffixSlash(keyPath);
         String blockDirPath = (!keyPath.startsWith("/")) ? this.logPath + "/" + keyPath : this.logPath + keyPath;
         FileUtils.createDirectoryIfNotExists(blockDirPath);
@@ -44,7 +46,8 @@ public class LogStore implements Storable {
         String blockFile = blockDirPath + "/" + blockFileName;
         FileUtils.createFileIfNotExists(blockFile);
 
-        int size = writeBufferToBlockFile(blockFile, blockBuffer);
+        blockSize = (blockSize > 0) ? blockSize : BLOCK_SIZE;
+        long length = writeBufferToBlockFile(blockFile, blockBuffer);
 
         if(index < 0) {
             index = 0;
@@ -52,8 +55,9 @@ public class LogStore implements Storable {
         BlockMetadata blockMetadata = new BlockMetadata(term,
                                                         index,
                                                         blockFile,
+                                                        blockSize,
                                                         0,
-                                                        size,
+                                                        length,
                                                         DateTimeUtils.currentTimeMillis(),
                                                         false,
                                                         -1);
@@ -70,17 +74,13 @@ public class LogStore implements Storable {
         return index;
     }
 
-    private int writeBufferToBlockFile(String blockFile, ByteBuffer blockBuffer) {
-        // TODO: block size can be configured.
-        int blockSize = 256 * 1024 * 1024;
-        int size = 0;
+    private long writeBufferToBlockFile(String blockFile, ByteBuffer blockBuffer) {
+        int length = 0;
         try {
-            RandomAccessFile f = new RandomAccessFile(blockFile, "rw");
-            f.setLength(blockSize);
-            FileChannel fileChannel = f.getChannel();
+            FileChannel fileChannel = new FileOutputStream(blockFile, false).getChannel();
 
             blockBuffer.rewind();
-            size = blockBuffer.remaining();
+            length = blockBuffer.remaining();
 
             while (blockBuffer.hasRemaining()) {
                 fileChannel.write(blockBuffer);
@@ -93,7 +93,7 @@ public class LogStore implements Storable {
             LOG.error(e.getMessage());
         }
 
-        return size;
+        return length;
     }
 
     @Override
