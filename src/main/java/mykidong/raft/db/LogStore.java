@@ -37,7 +37,12 @@ public class LogStore implements Storable {
     }
 
     @Override
-    public long saveBlock(long term, long index, String keyPath, long blockSize, int blockNumber, ByteBuffer blockBuffer) {
+    public long saveBlock(long term,
+                          long index,
+                          String keyPath,
+                          long blockSize,
+                          int blockNumber,
+                          ByteBuffer blockBuffer) {
         keyPath = StringUtils.removeSuffixSlash(keyPath);
         String blockDirPath = (!keyPath.startsWith("/")) ? this.logPath + "/" + keyPath : this.logPath + keyPath;
         FileUtils.createDirectoryIfNotExists(blockDirPath);
@@ -54,6 +59,7 @@ public class LogStore implements Storable {
         }
         BlockMetadata blockMetadata = new BlockMetadata(term,
                                                         index,
+                                                        keyPath,
                                                         blockFile,
                                                         blockSize,
                                                         0,
@@ -67,11 +73,17 @@ public class LogStore implements Storable {
         // save last index.
         saveLastIndex(index);
         long lastTerm = getLastTerm();
-        if(lastTerm == term) {
+        if(lastTerm != term) {
             saveLastTerm(term);
         }
 
         return index;
+    }
+
+    @Override
+    public BlockMetadata getBlockMetadata(long index) {
+        Optional<BlockMetadata> optionalBlockMetadata = dbBlock.find(String.valueOf(index), BlockMetadata.class);
+        return (optionalBlockMetadata.isPresent()) ? optionalBlockMetadata.get() : null;
     }
 
     private long writeBufferToBlockFile(String blockFile, ByteBuffer blockBuffer) {

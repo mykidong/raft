@@ -6,6 +6,7 @@ public class BlockMetadata {
 
     private long term;
     private long index;
+    private String keyPath;
     private String blockFilePath;
     private long blockSize;
     private long position;
@@ -18,6 +19,7 @@ public class BlockMetadata {
 
     public BlockMetadata(long term,
                          long index,
+                         String keyPath,
                          String blockFilePath,
                          long blockSize,
                          long position,
@@ -27,6 +29,7 @@ public class BlockMetadata {
                          long commitTimestamp) {
         this.term = term;
         this.index = index;
+        this.keyPath = keyPath;
         this.blockFilePath = blockFilePath;
         this.blockSize = blockSize;
         this.position = position;
@@ -55,6 +58,10 @@ public class BlockMetadata {
 
     public long getIndex() {
         return index;
+    }
+
+    public String getKeyPath() {
+        return keyPath;
     }
 
     public String getBlockFilePath() {
