@@ -1,6 +1,5 @@
 package mykidong.raft.timer;
 
-import mykidong.raft.controller.Controllable;
 import mykidong.raft.controller.LeaderElectionController;
 import mykidong.raft.test.TestBase;
 import org.junit.Test;
