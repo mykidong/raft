@@ -1,11 +1,13 @@
 package mykidong.raft.util;
 
-import mykidong.raft.db.RocksDBKVStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +47,36 @@ public class FileUtils {
                 f.createNewFile();
             }
             return filePath;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            return null;
+        }
+    }
+
+    public static ByteBuffer getMMap(String filePath, long position, long length) {
+        ByteBuffer buffer = null;
+        FileChannel fileChannel = null;
+        try {
+            RandomAccessFile raf = new RandomAccessFile(filePath, "rw");
+            fileChannel = raf.getChannel();
+            buffer = getMMap(fileChannel, position, length);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+        } finally {
+            try {
+                fileChannel.close();
+                LOG.debug("file channel [{}] closed...", filePath);
+            } catch (IOException e) {
+                LOG.error(e.getMessage());
+            }
+        }
+
+        return buffer;
+    }
+
+    public static ByteBuffer getMMap(FileChannel fileChannel, long position, long length) {
+        try {
+            return fileChannel.map(FileChannel.MapMode.READ_WRITE, position, length).duplicate();
         } catch (IOException e) {
             LOG.error(e.getMessage());
             return null;

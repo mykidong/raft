@@ -99,11 +99,11 @@ public class BlockFileTest extends TestBase {
             if(fileSize < nextPosition) {
                 long diff = fileSize - position;
                 LOG.info("diff: [{}]", diff);
-                ByteBuffer buffer = getMMap(fileChannel, position, diff);
+                ByteBuffer buffer = FileUtils.getMMap(fileChannel, position, diff);
                 writeBlockFile(buffer, count);
                 break;
             } else {
-                ByteBuffer buffer = getMMap(fileChannel, position, blockSize);
+                ByteBuffer buffer = FileUtils.getMMap(fileChannel, position, blockSize);
                 writeBlockFile(buffer, count);
 
                 count ++;
@@ -111,6 +111,8 @@ public class BlockFileTest extends TestBase {
                 nextPosition = position + blockSize;
             }
         }
+
+        raf.close();
     }
 
     private static void writeBlockFile(ByteBuffer buffer, int count) throws Exception {
@@ -125,14 +127,5 @@ public class BlockFileTest extends TestBase {
         channel.close();
 
         LOG.info("block file: [{}] with the size of [{}] written", blockFileName, bufferSize);
-    }
-
-
-    private static ByteBuffer getMMap(FileChannel fileChannel, int position, long length) {
-        try {
-            return fileChannel.map(FileChannel.MapMode.READ_WRITE, position, length).duplicate();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

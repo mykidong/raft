@@ -6,6 +6,7 @@ import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,6 +15,23 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
+
+
+/**
+ * This class handles block files with metadata and last term and last index of the log which are saved on rocks db.
+ *
+ * There are three rocks db tables which are handled by this class.
+ *
+ * Block Metadata Table: block metadata by log index number will be saved.
+ * (log index number -> block metadata)
+ *
+ * Last Term: last term number will be updated.
+ * (last term key -> last term number)
+ *
+ * Last Index: last log index number will be updated.
+ * (last index key -> last log index number)
+ *
+ */
 
 public class LogStore implements Storable {
     private static Logger LOG = LoggerFactory.getLogger(LogStore.class);
@@ -81,9 +99,30 @@ public class LogStore implements Storable {
     }
 
     @Override
+    public void commitBlock(long index) {
+        BlockMetadata blockMetadata = getBlockMetadata(index);
+        if(blockMetadata != null) {
+            blockMetadata.commit();
+            dbBlock.save(String.valueOf(index), blockMetadata);
+        }
+    }
+
+    @Override
     public BlockMetadata getBlockMetadata(long index) {
         Optional<BlockMetadata> optionalBlockMetadata = dbBlock.find(String.valueOf(index), BlockMetadata.class);
         return (optionalBlockMetadata.isPresent()) ? optionalBlockMetadata.get() : null;
+    }
+
+    @Override
+    public ByteBuffer getBlockBuffer(long index) {
+        BlockMetadata blockMetadata = getBlockMetadata(index);
+        if(blockMetadata != null) {
+            String blockFilePath = blockMetadata.getBlockFilePath();
+            long position = blockMetadata.getPosition();
+            long length = blockMetadata.getLength();
+            return FileUtils.getMMap(blockFilePath, position, length);
+        }
+        return null;
     }
 
     private long writeBufferToBlockFile(String blockFile, ByteBuffer blockBuffer) {
@@ -97,8 +136,11 @@ public class LogStore implements Storable {
             while (blockBuffer.hasRemaining()) {
                 fileChannel.write(blockBuffer);
             }
+            if(fileChannel.isOpen()) {
+                fileChannel.close();
+                LOG.debug("file channel for [{}] closed...", blockFile);
+            }
 
-            fileChannel.close();
         } catch (FileNotFoundException e) {
             LOG.error(e.getMessage());
         } catch (IOException e) {
@@ -126,7 +168,8 @@ public class LogStore implements Storable {
             String blockFilaPath = blockMetadata.getBlockFilePath();
             try {
                 // delete block file.
-                Files.delete(Paths.get(blockFilaPath));
+                Files.deleteIfExists(Paths.get(blockFilaPath));
+                LOG.debug("block file [{}] deleted...", blockFilaPath);
 
                 // delete block metadata.
                 dbBlock.delete(String.valueOf(index));
@@ -136,6 +179,7 @@ public class LogStore implements Storable {
                     dbLastTermAndIndex.delete(KEY_LAST_INDEX);
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 LOG.error(e.getMessage());
             }
         }

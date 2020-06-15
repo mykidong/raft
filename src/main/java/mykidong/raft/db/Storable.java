@@ -22,6 +22,14 @@ public interface Storable {
      */
     long saveBlock(long term, long index, String keyPath, long blockSize, int blockNumber, ByteBuffer blockBuffer);
 
+
+    /**
+     * commit block metadata.
+     *
+     * @param index
+     */
+    void commitBlock(long index);
+
     /**
      * get block metadata with the specified log index number from rocks db.
      *
@@ -31,11 +39,21 @@ public interface Storable {
     BlockMetadata getBlockMetadata(long index);
 
     /**
+     * get the byte buffer of the block file by index number.
+     *
+     * @param index the log index number.
+     * @return byte buffer of the block file.
+     */
+    ByteBuffer getBlockBuffer(long index);
+
+
+    /**
      * update last index for the block.
      *
      * @param index the number of log index.
      */
     void saveLastIndex(long index);
+
 
     /**
      * update last term number if necessary.
