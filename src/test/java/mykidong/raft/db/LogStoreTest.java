@@ -91,6 +91,7 @@ public class LogStoreTest extends TestBase {
 
         // delete block file with metadata.
         storable.deleteIndex(index);
+        LOG.info("after deleting index [{}]...", index);
 
         // block file does not exist.
         Assert.assertFalse(new File(retBlockMetadata.getBlockFilePath()).exists());
