@@ -90,6 +90,8 @@ public class LogStoreTest extends TestBase {
         Assert.assertTrue(new File(retBlockMetadata.getBlockFilePath()).exists());
 
         // delete block file with metadata.
+        // TODO: on windows, java.nio.file.FileSystemException is thrown
+        //       with the message of file being used by another process...
         storable.deleteIndex(index);
         LOG.info("after deleting index [{}]...", index);
 
