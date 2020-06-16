@@ -1,7 +1,7 @@
 package mykidong.raft.processor;
 
 import mykidong.raft.api.*;
-import mykidong.raft.server.ChannelProcessor;
+import mykidong.raft.controller.Controllable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +10,13 @@ import java.nio.ByteBuffer;
 public class RequestResponseHandler implements Handlerable {
 
     private static Logger LOG = LoggerFactory.getLogger(RequestResponseHandler.class);
+
+    // TODO: handle leader election.
+    private Controllable controllable;
+
+    public RequestResponseHandler(Controllable controllable) {
+        this.controllable = controllable;
+    }
 
     @Override
     public Attachment handleRequest(BaseRequestHeader baseRequestHeader, ByteBuffer requestBuffer) {

@@ -3,6 +3,7 @@ package mykidong.raft.server;
 import mykidong.raft.api.BaseRequestHeader;
 import mykidong.raft.api.Attachment;
 import mykidong.raft.api.BufferUtils;
+import mykidong.raft.controller.Controllable;
 import mykidong.raft.processor.Handlerable;
 import mykidong.raft.processor.RequestResponseHandler;
 import mykidong.raft.util.JsonUtils;
@@ -27,10 +28,10 @@ public class ChannelProcessor extends Thread {
     private long pollTimeout;
     private Handlerable handlerable;
 
-    public ChannelProcessor(long pollTimeout, int queueSize) {
+    public ChannelProcessor(long pollTimeout, int queueSize, Controllable controllable) {
         this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);        
         this.pollTimeout = pollTimeout;
-        handlerable = new RequestResponseHandler();
+        handlerable = new RequestResponseHandler(controllable);
 
         // create new selector.
         newSelector();

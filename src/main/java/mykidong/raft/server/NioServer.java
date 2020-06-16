@@ -23,6 +23,7 @@ public class NioServer extends Thread {
     private int port;
     private Random random;
     private AtomicLong socketChannelCount = new AtomicLong(0);
+    private boolean ready = false;
 
     public NioServer(int port, List<ChannelProcessor> channelProcessors) {
         this.port = port;
@@ -40,6 +41,10 @@ public class NioServer extends Thread {
         return this.channelProcessors.get(index);
     }
 
+    public boolean isReady() {
+        return ready;
+    }
+
     @Override
     public void run() {
         try {
@@ -51,8 +56,8 @@ public class NioServer extends Thread {
 
             // server socket registered for accept.
             serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
-
             LOG.info("server socket is listening on {} ...", this.port);
+            ready = true;
 
             while (!shutdown) {
                 int readyChannels = this.selector.select();

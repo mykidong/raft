@@ -1,5 +1,8 @@
 package mykidong.raft.controller;
 
+import java.util.TimerTask;
+
 public interface Controllable {
-    void changeState(int ops);
+    void setVoteTimerTask(TimerTask voteTimerTask);
+    void changeState(int ops, TimerTask timerTask);
 }

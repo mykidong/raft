@@ -83,6 +83,7 @@ public class LogStoreTest extends TestBase {
         Assert.assertEquals(keyPath, committedBlockMetadata.getKeyPath());
         Assert.assertNotNull(committedBlockMetadata.getBlockFilePath());
 
+        // get byte buffer of the block file by the index number.
         ByteBuffer retBlockBuffer = storable.getBlockBuffer(index);
         retBlockBuffer.rewind();
         Assert.assertEquals(bytes.length, retBlockBuffer.remaining());

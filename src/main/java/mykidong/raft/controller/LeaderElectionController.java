@@ -2,6 +2,7 @@ package mykidong.raft.controller;
 
 import mykidong.raft.timer.RaftTimer;
 import mykidong.raft.timer.Schedulable;
+import mykidong.raft.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ public class LeaderElectionController extends Thread implements Controllable{
     private long leaderPeriod;
     private long followerDelay;
     private int currentState = OP_VOTE;
+    private TimerTask currentTimerTask;
     private final Object lock = new Object();
 
     public LeaderElectionController(long delayRangeGreaterThanEquals,
@@ -61,8 +63,16 @@ public class LeaderElectionController extends Thread implements Controllable{
     }
 
     @Override
-    public void changeState(int ops) {
+    public void setVoteTimerTask(TimerTask voteTimerTask) {
+        currentState = OP_VOTE;
+        currentTimerTask = voteTimerTask;
+        LOG.info("vote timer task set...");
+    }
+
+    @Override
+    public void changeState(int ops, TimerTask timerTask) {
         currentState = ops;
+        currentTimerTask = timerTask;
 
         voteTimer.cancel();
         heartbeatTimer.cancel();
@@ -94,70 +104,32 @@ public class LeaderElectionController extends Thread implements Controllable{
     }
 
     private void runLeaderHeartbeatTimer() {
+        if(currentTimerTask == null) {
+            LOG.info("current timer task not set yet...");
+            TimeUtils.pause(1000);
+            return;
+        }
         heartbeatTimer.cancel();
-        heartbeatTimer.runTimer(new LeaderHeartbeatTimerTask(this), leaderPeriod);
-    }
-
-    private static class LeaderHeartbeatTimerTask extends TimerTask {
-        private Controllable controllable;
-
-        public LeaderHeartbeatTimerTask(Controllable controllable) {
-            this.controllable = controllable;
-        }
-
-        @Override
-        public void run() {
-            // TODO: as leader, run timer for heartbeat timer to send leader alive info to the followers.
-            LOG.debug("as leader, run timer for heartbeat timer to send leader alive info to the followers");
-        }
+        heartbeatTimer.runTimer(currentTimerTask, leaderPeriod);
     }
 
     private void runFollowerHeartbeatTimer() {
+        if(currentTimerTask == null) {
+            LOG.info("current timer task not set yet...");
+            TimeUtils.pause(1000);
+            return;
+        }
         heartbeatTimer.cancel();
-        heartbeatTimer.runTimerOnceWithDelay(new FollowerHeartbeatTimerTask(this), followerDelay);
-    }
-
-    private static class FollowerHeartbeatTimerTask extends TimerTask {
-        private Controllable controllable;
-
-        public FollowerHeartbeatTimerTask(Controllable controllable) {
-            this.controllable = controllable;
-        }
-
-        @Override
-        public void run() {
-            // TODO: if heartbeat timer timed out, signal to run vote timer as follower.
-            LOG.debug("leader heartbeat timed out...");
-            controllable.changeState(LeaderElectionController.OP_VOTE);
-        }
+        heartbeatTimer.runTimerOnceWithDelay(currentTimerTask, followerDelay);
     }
 
     private void runVoteTimer() {
+        if(currentTimerTask == null) {
+            LOG.info("current timer task not set yet...");
+            TimeUtils.pause(1000);
+            return;
+        }
         voteTimer.cancel();
-
-        voteTimer.runTimerOnceWithDelay(new VoteTimerTask(this), getRandomDelay());
-    }
-
-    private static class VoteTimerTask extends TimerTask {
-
-        private Controllable controllable;
-
-        public VoteTimerTask(Controllable controllable) {
-            this.controllable = controllable;
-        }
-
-        @Override
-        public void run() {
-            // if any vote requests have not arrived yet, as candidate, send vote request to the followers.
-            // TODO: send vote request as candidate to the followers.
-            //       if this candidate gets votes from the majority of the followers, it will become to leader.
-            LOG.debug("send vote request as candidate to the followers...");
-
-            // if this candidate gets votes from the majority of the followers, it will become to leader.
-            boolean gotMajorityVote = true;
-            if(gotMajorityVote) {
-                controllable.changeState(LeaderElectionController.OP_BECOME_LEADER);
-            }
-        }
+        voteTimer.runTimerOnceWithDelay(currentTimerTask, getRandomDelay());
     }
 }

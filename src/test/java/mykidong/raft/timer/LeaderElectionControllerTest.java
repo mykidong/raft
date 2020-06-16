@@ -1,6 +1,9 @@
 package mykidong.raft.timer;
 
+import mykidong.raft.controller.FollowerHeartbeatTimerTask;
 import mykidong.raft.controller.LeaderElectionController;
+import mykidong.raft.controller.LeaderHeartbeatTimerTask;
+import mykidong.raft.controller.VoteTimerTask;
 import mykidong.raft.test.TestBase;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -14,13 +17,14 @@ public class LeaderElectionControllerTest extends TestBase {
     public void runTimerController() throws Exception {
         LeaderElectionController leaderElectionController =
                 new LeaderElectionController(2000, 3000, 4000, 5000);
+        leaderElectionController.setVoteTimerTask(new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController)));
         leaderElectionController.start();
 
         Thread.sleep(1000);
-        leaderElectionController.changeState(LeaderElectionController.OP_VOTE_REQUEST_ARRIVED);
+        leaderElectionController.changeState(LeaderElectionController.OP_VOTE_REQUEST_ARRIVED, new FollowerHeartbeatTimerTask(leaderElectionController, new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController))));
 
         Thread.sleep(3000);
-        leaderElectionController.changeState(LeaderElectionController.OP_HEARTBEAT_ARRIVED);
+        leaderElectionController.changeState(LeaderElectionController.OP_HEARTBEAT_ARRIVED, new FollowerHeartbeatTimerTask(leaderElectionController, new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController))));
 
         Thread.sleep(Long.MAX_VALUE);
     }

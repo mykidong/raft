@@ -6,7 +6,6 @@ import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,7 +18,6 @@ import java.util.Optional;
 
 /**
  * This class handles block files with metadata and last term and last index of the log which are saved on rocks db.
- *
  * There are three rocks db tables which are handled by this class.
  *
  * Block Metadata Table: block metadata by log index number will be saved.
