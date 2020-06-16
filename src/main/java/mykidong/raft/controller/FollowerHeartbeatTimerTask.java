@@ -13,8 +13,7 @@ public class FollowerHeartbeatTimerTask extends AbstractTimerTask {
 
     @Override
     public void run() {
-        // TODO: if heartbeat timer timed out, signal to run vote timer as follower.
-        LOG.debug("leader heartbeat timed out...");
+        LOG.info("leader heartbeat timed out...");
         controllable.changeState(LeaderElectionController.OP_VOTE, voteTimerTask);
     }
 }

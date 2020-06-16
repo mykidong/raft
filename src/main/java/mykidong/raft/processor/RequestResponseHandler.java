@@ -24,6 +24,9 @@ public class RequestResponseHandler implements Handlerable {
         short apiId = baseRequestHeader.getApiId();
         short version = baseRequestHeader.getVersion();
 
+        int correlationId = baseRequestHeader.getMessageId();
+        Translatable<BaseResponseHeader> baseResponseHeader = new BaseResponseHeader(correlationId);
+
         if(apiId == LeaderElectionRequest.API_ID) {
             RequestResponse<LeaderElectionRequest.LeaderElectionRequestHeader,
                     LeaderElectionRequest.LeaderElectionRequestBody> request = new RequestResponse<>(requestBuffer,
@@ -43,11 +46,7 @@ public class RequestResponseHandler implements Handlerable {
             // TODO: handle request.
             LOG.debug("api id: [{}]", apiId);
 
-
             // ========================== response ====================================
-            int correlationId = baseRequestHeader.getMessageId();
-            Translatable<BaseResponseHeader> baseResponseHeader = new BaseResponseHeader(correlationId);
-
             Translatable<LeaderElectionResponse.LeaderElectionResponseHeader> responseHeader =
                     new LeaderElectionResponse.LeaderElectionResponseHeader(baseResponseHeader);
 
@@ -66,7 +65,45 @@ public class RequestResponseHandler implements Handlerable {
             responseBuffer.rewind();
 
             attachment = new Attachment(baseRequestHeader, null, responseBuffer);
+        } else if(apiId == HeartbeatRequest.API_ID) {
+
+            // ========================== request ====================================
+            RequestResponse<HeartbeatRequest.HeartbeatRequestHeader,
+                    HeartbeatRequest.HeartbeatRequestBody> request =
+                    new RequestResponse<>(requestBuffer, HeartbeatRequest.HeartbeatRequestHeader.class,
+                            HeartbeatRequest.HeartbeatRequestBody.class);
+
+            HeartbeatRequest.HeartbeatRequestBody requestBody = request.getBody().toObject();
+            String leaderId = requestBody.getLeaderId();
+
+            // TODO: handle request.
+
+            // ========================== response ====================================
+            // response header.
+            Translatable<HeartbeatResponse.HeartbeatResponseHeader> responseHeader =
+                    new HeartbeatResponse.HeartbeatResponseHeader(baseResponseHeader);
+
+            // base response body.
+            short errorCode = 0;
+            Translatable<BaseResponseBody> baseResponseBody = new BaseResponseBody(errorCode);
+
+            // response body.
+            // TODO: set follower id.
+            String followerId = "any-follower-id";
+            Translatable<HeartbeatResponse.HeartbeatResponseBody> responseBody =
+                    new HeartbeatResponse.HeartbeatResponseBody(baseResponseBody, followerId);
+
+            // response.
+            RequestResponse<HeartbeatResponse.HeartbeatResponseHeader,
+                    HeartbeatResponse.HeartbeatResponseBody> response = new RequestResponse<>(responseHeader, responseBody);
+
+            // response buffer.
+            ByteBuffer responseBuffer = response.toBuffer();
+            responseBuffer.rewind();
+
+            attachment = new Attachment(baseRequestHeader, null, responseBuffer);
         }
+        // TODO: handle the requests of other apis.
 
         return attachment;
     }
@@ -76,11 +113,13 @@ public class RequestResponseHandler implements Handlerable {
         BaseRequestHeader baseRequestHeader = attachment.getBaseRequestHeader();
         short apiId = baseRequestHeader.getApiId();
         short version = baseRequestHeader.getVersion();
-        if(apiId == LeaderElectionRequest.API_ID) {
-            ByteBuffer responseBuffer = attachment.getResponseBuffer();
-            return responseBuffer;
+        ByteBuffer responseBuffer = null;
+        if(apiId == LeaderElectionRequest.API_ID ||
+                apiId == HeartbeatRequest.API_ID) {
+            responseBuffer = attachment.getResponseBuffer();
         }
+        // TODO: handle the responses of other apis.
 
-        return null;
+        return responseBuffer;
     }
 }
