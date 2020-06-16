@@ -2,10 +2,13 @@ package mykidong.raft.processor;
 
 import mykidong.raft.api.*;
 import mykidong.raft.controller.Controllable;
+import mykidong.raft.controller.LeaderHeartbeatTimerTask;
+import mykidong.raft.controller.VoteTimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.TimerTask;
 
 public class RequestResponseHandler implements Handlerable {
 
@@ -13,9 +16,19 @@ public class RequestResponseHandler implements Handlerable {
 
     // TODO: handle leader election.
     private Controllable controllable;
+    private TimerTask voteTimerTask;
+    private TimerTask leaderHeartbeatTimerTask;
+    private TimerTask followerHeartbeatTimerTask;
 
     public RequestResponseHandler(Controllable controllable) {
         this.controllable = controllable;
+
+        // TODO: add concrete implementations of timer tasks.
+        leaderHeartbeatTimerTask = new LeaderHeartbeatTimerTask(controllable);
+        voteTimerTask = new VoteTimerTask(controllable, leaderHeartbeatTimerTask);
+
+        // vote timer task must be set before leader election controller thread get started.
+        this.controllable.setVoteTimerTask(voteTimerTask);
     }
 
     @Override

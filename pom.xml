@@ -30,6 +30,9 @@
 
 		<!-- joda time -->
 		<joda-time.version>2.9.9</joda-time.version>
+
+		<!-- snake yaml -->
+		<snakeyaml.version>1.26</snakeyaml.version>
 	</properties>
 
 	<dependencies>
@@ -84,6 +87,11 @@
             <artifactId>joda-time</artifactId>
             <version>${joda-time.version}</version>
         </dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>${snakeyaml.version}</version>
+		</dependency>
     </dependencies>
 	<build>
 		<pluginManagement>
