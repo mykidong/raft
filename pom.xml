@@ -33,6 +33,9 @@
 
 		<!-- snake yaml -->
 		<snakeyaml.version>1.26</snakeyaml.version>
+
+		<!-- jopt simple -->
+		<jopt-simple.version>5.0.4</jopt-simple.version>
 	</properties>
 
 	<dependencies>
@@ -92,6 +95,11 @@
 			<artifactId>snakeyaml</artifactId>
 			<version>${snakeyaml.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>net.sf.jopt-simple</groupId>
+            <artifactId>jopt-simple</artifactId>
+            <version>${jopt-simple.version}</version>
+        </dependency>
     </dependencies>
 	<build>
 		<pluginManagement>

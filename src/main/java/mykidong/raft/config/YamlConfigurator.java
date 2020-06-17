@@ -1,12 +1,17 @@
 package mykidong.raft.config;
 
+import mykidong.raft.db.RocksDBKVStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
 public class YamlConfigurator implements Configurator {
+
+    private static Logger LOG = LoggerFactory.getLogger(YamlConfigurator.class);
 
     public static final String DEFAULT_CONFIG_PATH = "/config/raft.yml";
 
@@ -14,21 +19,21 @@ public class YamlConfigurator implements Configurator {
 
     private static final Object lock = new Object();
 
-    private static Configurator configHandler;
+    private static Configurator configurator;
 
     public static Configurator open() {
         return YamlConfigurator.open(DEFAULT_CONFIG_PATH);
     }
 
     public static Configurator open(String configPath) {
-        if (configHandler == null) {
+        if (configurator == null) {
             synchronized (lock) {
-                if (configHandler == null) {
-                    configHandler = new YamlConfigurator(configPath);
+                if (configurator == null) {
+                    configurator = new YamlConfigurator(configPath);
                 }
             }
         }
-        return configHandler;
+        return configurator;
     }
 
 
@@ -36,14 +41,18 @@ public class YamlConfigurator implements Configurator {
         java.net.URL url = this.getClass().getResource(configPath);
         try {
             Yaml yaml = new Yaml();
-            Map<String, Object> yamlMap = (Map<String, Object>) yaml.load(url.openStream());
-
-            configMap = Collections.unmodifiableMap(yamlMap);
+            configMap = (Map<String, Object>) yaml.load(url.openStream());
+            LOG.info("configuration: [{}] loaded...", configPath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+
+    @Override
+    public void put(String key, Object value) {
+        configMap.put(key, value);
+    }
 
     @Override
     public Optional get(String key) {

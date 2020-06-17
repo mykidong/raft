@@ -1,5 +1,10 @@
 package mykidong.raft.server;
 
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import mykidong.raft.config.Configuration;
+import mykidong.raft.config.Configurator;
+import mykidong.raft.config.YamlConfigurator;
 import mykidong.raft.controller.LeaderElectionController;
 import mykidong.raft.util.TimeUtils;
 import org.apache.log4j.xml.DOMConfigurator;
@@ -8,18 +13,22 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class RaftServer {
 
     private static Logger LOG = LoggerFactory.getLogger(RaftServer.class);
 
-    private int port = 9912;
+    private Configurator configurator;
 
-    public RaftServer(int port) {
-        this.port = port;
+    public RaftServer(Configurator configurator) {
+        this.configurator = configurator;
+
+        int port = (Integer) configurator.get(Configuration.SERVER_PORT.getConf()).get();
 
         // log4j init.
-        DOMConfigurator.configure(this.getClass().getResource("/log4j.xml"));
+        String log4jConf = (String) configurator.get(Configuration.LOG4J_CONF.getConf()).get();
+        DOMConfigurator.configure(this.getClass().getResource(log4jConf));
 
         // poll timeout for socket channel queue.
         long socketChannelQueuePollTimeout = 1000;
@@ -51,7 +60,7 @@ public class RaftServer {
         }
 
         // nio server.
-        NioServer nioServer = new NioServer(this.port, channelProcessors);
+        NioServer nioServer = new NioServer(port, channelProcessors);
 
         // start nio server.
         nioServer.start();
@@ -67,5 +76,40 @@ public class RaftServer {
             }
         }
         leaderElectionController.start();
+    }
+
+    public static void main(String[] args) {
+
+        OptionParser parser = new OptionParser();
+        parser.accepts(Configuration.CONF.getArgConf()).withRequiredArg().ofType(String.class);
+        parser.accepts(Configuration.LOG4J_CONF.getArgConf()).withRequiredArg().ofType(String.class);
+        parser.accepts(Configuration.SERVER_PORT.getArgConf()).withRequiredArg().ofType(Integer.class);
+
+        OptionSet options = parser.parse(args);
+
+        String conf = (options.has(Configuration.CONF.getArgConf())) ? (String) options.valueOf(Configuration.CONF.getArgConf())
+                : (String) Configuration.CONF.getDefaultValue();
+
+        // load configuration.
+        Configurator configurator = YamlConfigurator.open(conf);
+
+        // log4j conf.
+        Optional optionalLog4JConf =  configurator.get(Configuration.LOG4J_CONF.getConf());
+        String log4jConf = (options.has(Configuration.LOG4J_CONF.getArgConf())) ? (String) options.valueOf(Configuration.LOG4J_CONF.getArgConf())
+                : ((optionalLog4JConf.isPresent()) ? (String) optionalLog4JConf.get() : (String) Configuration.LOG4J_CONF.getDefaultValue());
+
+        // update log4j conf to configurator.
+        configurator.put(Configuration.LOG4J_CONF.getConf(), log4jConf);
+
+
+        // server port.
+        Optional optionalServerPortConf =  configurator.get(Configuration.SERVER_PORT.getConf());
+        int serverPort = (options.has(Configuration.SERVER_PORT.getArgConf())) ? (Integer) options.valueOf(Configuration.SERVER_PORT.getArgConf())
+                : ((optionalServerPortConf.isPresent()) ? (Integer) optionalServerPortConf.get() : (Integer) Configuration.SERVER_PORT.getDefaultValue());
+
+        // update server port conf to configurator.
+        configurator.put(Configuration.SERVER_PORT.getConf(), serverPort);
+
+        RaftServer raftServer = new RaftServer(configurator);
     }
 }

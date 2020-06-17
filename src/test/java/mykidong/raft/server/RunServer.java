@@ -1,9 +1,13 @@
 package mykidong.raft.server;
 
+import mykidong.raft.config.Configuration;
+import mykidong.raft.config.Configurator;
+import mykidong.raft.config.YamlConfigurator;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 public class RunServer {
 
@@ -17,7 +21,10 @@ public class RunServer {
     public void run() throws Exception
     {
         int port = 9912;
-        RaftServer raftServer = new RaftServer(port);
+        Configurator configurator = YamlConfigurator.open();
+        configurator.put(Configuration.SERVER_PORT.getConf(), port);
+
+        RaftServer raftServer = new RaftServer(configurator);
 
         Thread.sleep(Long.MAX_VALUE);
     }
