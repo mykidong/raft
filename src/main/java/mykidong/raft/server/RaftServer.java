@@ -84,6 +84,7 @@ public class RaftServer {
         parser.accepts(Configuration.CONF.getArgConf()).withRequiredArg().ofType(String.class);
         parser.accepts(Configuration.LOG4J_CONF.getArgConf()).withRequiredArg().ofType(String.class);
         parser.accepts(Configuration.SERVER_PORT.getArgConf()).withRequiredArg().ofType(Integer.class);
+        parser.accepts(Configuration.NODE_LIST.getArgConf()).withRequiredArg().ofType(String.class);
 
         OptionSet options = parser.parse(args);
 
@@ -101,7 +102,6 @@ public class RaftServer {
         // update log4j conf to configurator.
         configurator.put(Configuration.LOG4J_CONF.getConf(), log4jConf);
 
-
         // server port.
         Optional optionalServerPortConf =  configurator.get(Configuration.SERVER_PORT.getConf());
         int serverPort = (options.has(Configuration.SERVER_PORT.getArgConf())) ? (Integer) options.valueOf(Configuration.SERVER_PORT.getArgConf())
@@ -109,6 +109,23 @@ public class RaftServer {
 
         // update server port conf to configurator.
         configurator.put(Configuration.SERVER_PORT.getConf(), serverPort);
+
+
+        // node list.
+        List<String> nodeList = new ArrayList<>();
+        if(options.has(Configuration.NODE_LIST.getArgConf())) {
+            String nodes = (String) options.valueOf(Configuration.NODE_LIST.getArgConf());
+            for(String nodeLine : nodes.split(",")) {
+                nodeList.add(nodeLine);
+            }
+        } else {
+            Optional optionalNodeListConf =  configurator.get(Configuration.NODE_LIST.getConf());
+            nodeList = (optionalNodeListConf.isPresent()) ? (List<String>) optionalNodeListConf.get()
+                    : (List<String>) Configuration.NODE_LIST.getDefaultValue();
+        }
+
+        // update node list conf to configurator.
+        configurator.put(Configuration.NODE_LIST.getConf(), nodeList);
 
         RaftServer raftServer = new RaftServer(configurator);
     }

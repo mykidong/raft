@@ -1,1 +1,5 @@
 log4j.conf: /log4j.xml
+
+server.port: 9912
+
+node.list: ["0:localhost:9912", "1:localhost:9913", "2:localhost:9914", "3:localhost:9915", "4:localhost:9916"]
