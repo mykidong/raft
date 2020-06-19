@@ -21,3 +21,10 @@ timer:
   delayRangeLessThan: 3000
   leaderPeriod: 4000
   followerDelay: 5000
+
+
+anyKey:
+  subKey:
+    last-sub-key: value1
+  subKey2:
+    last-sub-key: value2

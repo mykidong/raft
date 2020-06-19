@@ -1,8 +1,10 @@
 package mykidong.raft.server;
 
-import mykidong.raft.api.BaseRequestHeader;
 import mykidong.raft.api.Attachment;
+import mykidong.raft.api.BaseRequestHeader;
 import mykidong.raft.api.BufferUtils;
+import mykidong.raft.config.Configuration;
+import mykidong.raft.config.Configurator;
 import mykidong.raft.controller.Controllable;
 import mykidong.raft.processor.Handlerable;
 import mykidong.raft.processor.RequestResponseHandler;
@@ -27,10 +29,14 @@ public class ChannelProcessor extends Thread {
     private Selector selector;
     private long pollTimeout;
     private Handlerable handlerable;
+    private Configurator configurator;
 
-    public ChannelProcessor(long pollTimeout, int queueSize, Controllable controllable) {
-        this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);        
-        this.pollTimeout = pollTimeout;
+    public ChannelProcessor(Configurator configurator, Controllable controllable) {
+        this.configurator = configurator;
+        int queueSize = (Integer) configurator.get(Configuration.NIO_SOCKET_CHANNEL_QUEUE_SIZE.getConf()).get();
+        this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);
+        Object pollTimeoutObj = configurator.get(Configuration.NIO_SOCKET_CHANNEL_QUEUE_POLL_TIMEOUT.getConf()).get();
+        this.pollTimeout = (pollTimeoutObj instanceof Integer) ? new Long((int) pollTimeoutObj) : new Long((long) pollTimeoutObj);
         handlerable = new RequestResponseHandler(controllable);
 
         // create new selector.

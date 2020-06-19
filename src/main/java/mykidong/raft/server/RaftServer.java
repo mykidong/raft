@@ -30,20 +30,25 @@ public class RaftServer {
         String log4jConf = (String) configurator.get(Configuration.LOG4J_CONF.getConf()).get();
         DOMConfigurator.configure(this.getClass().getResource(log4jConf));
 
-        // poll timeout for socket channel queue.
-        long socketChannelQueuePollTimeout = 1000;
-
-        // blocking queue size.
-        int queueSize = 4;
-
         // channel processor count.
-        int channelProcessorCount = 10;
+        int channelProcessorCount = (Integer) configurator.get(Configuration.NIO_CHANNEL_PROCESSOR_COUNT.getConf()).get();
 
         // leader election controller.
-        long delayRangeGreaterThanEquals = 2000;
-        long delayRangeLessThan = 3000;
-        long leaderPeriod = 4000;
-        long followerDelay = 5000;
+        Object delayRangeGreaterThanEqualsObj = configurator.get(Configuration.TIMER_DELAY_RANGE_GREATER_THAN_EQUALS.getConf()).get();
+        long delayRangeGreaterThanEquals = (delayRangeGreaterThanEqualsObj instanceof Integer) ? new Long((int)delayRangeGreaterThanEqualsObj)
+                : new Long((long) delayRangeGreaterThanEqualsObj);
+
+        Object delayRangeLessThanObj = configurator.get(Configuration.TIMER_DELAY_RANGE_LESS_THAN.getConf()).get();
+        long delayRangeLessThan = (delayRangeLessThanObj instanceof Integer) ? new Long((int)delayRangeLessThanObj)
+                : new Long((long) delayRangeLessThanObj);
+
+        Object leaderPeriodObj = configurator.get(Configuration.TIMER_LEADER_PERIOD.getConf()).get();
+        long leaderPeriod = (leaderPeriodObj instanceof Integer) ? new Long((int)leaderPeriodObj)
+                : new Long((long) leaderPeriodObj);
+
+        Object followerDelayObj = configurator.get(Configuration.TIMER_FOLLOWER_DELAY.getConf()).get();
+        long followerDelay = (followerDelayObj instanceof Integer) ? new Long((int)followerDelayObj)
+                : new Long((long) followerDelayObj);
         LeaderElectionController leaderElectionController =
                 new LeaderElectionController(delayRangeGreaterThanEquals, delayRangeLessThan, leaderPeriod, followerDelay);
 
@@ -51,7 +56,7 @@ public class RaftServer {
         List<ChannelProcessor> channelProcessors = new ArrayList<>(channelProcessorCount);
         for(int i = 0; i < channelProcessorCount; i++)
         {
-            channelProcessors.add(new ChannelProcessor(socketChannelQueuePollTimeout, queueSize, leaderElectionController));
+            channelProcessors.add(new ChannelProcessor(configurator, leaderElectionController));
         }
 
         // start channel processors.
@@ -60,7 +65,7 @@ public class RaftServer {
         }
 
         // nio server.
-        NioServer nioServer = new NioServer(port, channelProcessors);
+        NioServer nioServer = new NioServer(port, channelProcessors, configurator);
 
         // start nio server.
         nioServer.start();

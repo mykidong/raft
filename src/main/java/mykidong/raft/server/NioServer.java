@@ -1,5 +1,6 @@
 package mykidong.raft.server;
 
+import mykidong.raft.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,10 +25,12 @@ public class NioServer extends Thread {
     private Random random;
     private AtomicLong socketChannelCount = new AtomicLong(0);
     private boolean ready = false;
+    private Configurator configurator;
 
-    public NioServer(int port, List<ChannelProcessor> channelProcessors) {
+    public NioServer(int port, List<ChannelProcessor> channelProcessors, Configurator configurator) {
         this.port = port;
         this.channelProcessors = channelProcessors;
+        this.configurator = configurator;
         this.random = new Random();
     }
 
