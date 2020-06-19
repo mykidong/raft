@@ -1,13 +1,15 @@
 package mykidong.raft.controller;
 
+import mykidong.raft.config.Configurator;
+
 import java.util.TimerTask;
 
 public class FollowerHeartbeatTimerTask extends AbstractTimerTask {
 
     private TimerTask voteTimerTask;
 
-    public FollowerHeartbeatTimerTask(Controllable controllable, TimerTask voteTimerTask) {
-        super(controllable);
+    public FollowerHeartbeatTimerTask(Controllable controllable, TimerTask voteTimerTask, Configurator configurator) {
+        super(controllable, configurator);
         this.voteTimerTask = voteTimerTask;
     }
 

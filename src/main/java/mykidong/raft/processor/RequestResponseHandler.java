@@ -1,6 +1,7 @@
 package mykidong.raft.processor;
 
 import mykidong.raft.api.*;
+import mykidong.raft.config.Configurator;
 import mykidong.raft.controller.Controllable;
 import mykidong.raft.controller.LeaderHeartbeatTimerTask;
 import mykidong.raft.controller.VoteTimerTask;
@@ -20,12 +21,15 @@ public class RequestResponseHandler implements Handlerable {
     private TimerTask leaderHeartbeatTimerTask;
     private TimerTask followerHeartbeatTimerTask;
 
-    public RequestResponseHandler(Controllable controllable) {
+    private Configurator configurator;
+
+    public RequestResponseHandler(Controllable controllable, Configurator configurator) {
         this.controllable = controllable;
+        this.configurator = configurator;
 
         // TODO: add concrete implementations of timer tasks.
-        leaderHeartbeatTimerTask = new LeaderHeartbeatTimerTask(controllable);
-        voteTimerTask = new VoteTimerTask(controllable, leaderHeartbeatTimerTask);
+        leaderHeartbeatTimerTask = new LeaderHeartbeatTimerTask(controllable, configurator);
+        voteTimerTask = new VoteTimerTask(controllable, leaderHeartbeatTimerTask, configurator);
 
         // vote timer task must be set before leader election controller thread get started.
         this.controllable.setVoteTimerTask(voteTimerTask);

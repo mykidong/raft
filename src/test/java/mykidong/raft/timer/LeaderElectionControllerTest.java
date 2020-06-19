@@ -1,5 +1,7 @@
 package mykidong.raft.timer;
 
+import mykidong.raft.config.Configurator;
+import mykidong.raft.config.YamlConfigurator;
 import mykidong.raft.controller.FollowerHeartbeatTimerTask;
 import mykidong.raft.controller.LeaderElectionController;
 import mykidong.raft.controller.LeaderHeartbeatTimerTask;
@@ -15,16 +17,29 @@ public class LeaderElectionControllerTest extends TestBase {
 
     @Test
     public void runTimerController() throws Exception {
+        Configurator configurator = YamlConfigurator.open();
         LeaderElectionController leaderElectionController =
                 new LeaderElectionController(2000, 3000, 4000, 5000);
-        leaderElectionController.setVoteTimerTask(new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController)));
+        leaderElectionController.setVoteTimerTask(new VoteTimerTask(leaderElectionController,
+                                                                    new LeaderHeartbeatTimerTask(leaderElectionController, configurator),
+                                                                    configurator));
         leaderElectionController.start();
 
         Thread.sleep(1000);
-        leaderElectionController.changeState(LeaderElectionController.OP_VOTE_REQUEST_ARRIVED, new FollowerHeartbeatTimerTask(leaderElectionController, new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController))));
+        leaderElectionController.changeState(LeaderElectionController.OP_VOTE_REQUEST_ARRIVED,
+                new FollowerHeartbeatTimerTask(leaderElectionController,
+                                               new VoteTimerTask(leaderElectionController,
+                                                                 new LeaderHeartbeatTimerTask(leaderElectionController, configurator),
+                                                                 configurator),
+                                               configurator));
 
         Thread.sleep(3000);
-        leaderElectionController.changeState(LeaderElectionController.OP_HEARTBEAT_ARRIVED, new FollowerHeartbeatTimerTask(leaderElectionController, new VoteTimerTask(leaderElectionController, new LeaderHeartbeatTimerTask(leaderElectionController))));
+        leaderElectionController.changeState(LeaderElectionController.OP_HEARTBEAT_ARRIVED,
+                new FollowerHeartbeatTimerTask(leaderElectionController,
+                                               new VoteTimerTask(leaderElectionController,
+                                                                 new LeaderHeartbeatTimerTask(leaderElectionController, configurator),
+                                                                 configurator),
+                                               configurator));
 
         Thread.sleep(Long.MAX_VALUE);
     }

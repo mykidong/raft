@@ -37,7 +37,7 @@ public class ChannelProcessor extends Thread {
         this.socketChannelQueue = new ArrayBlockingQueue<>(queueSize);
         Object pollTimeoutObj = configurator.get(Configuration.NIO_SOCKET_CHANNEL_QUEUE_POLL_TIMEOUT.getConf()).get();
         this.pollTimeout = (pollTimeoutObj instanceof Integer) ? new Long((int) pollTimeoutObj) : new Long((long) pollTimeoutObj);
-        handlerable = new RequestResponseHandler(controllable);
+        handlerable = new RequestResponseHandler(controllable, configurator);
 
         // create new selector.
         newSelector();

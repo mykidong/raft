@@ -1,9 +1,11 @@
 package mykidong.raft.controller;
 
+import mykidong.raft.config.Configurator;
+
 public class LeaderHeartbeatTimerTask extends AbstractTimerTask {
 
-    public LeaderHeartbeatTimerTask(Controllable controllable) {
-        super(controllable);
+    public LeaderHeartbeatTimerTask(Controllable controllable, Configurator configurator) {
+        super(controllable, configurator);
     }
 
     @Override
