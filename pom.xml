@@ -32,7 +32,7 @@
 		<joda-time.version>2.9.9</joda-time.version>
 
 		<!-- snake yaml -->
-		<snakeyaml.version>1.26</snakeyaml.version>
+		<snakeyaml.version>1.32</snakeyaml.version>
 
 		<!-- jopt simple -->
 		<jopt-simple.version>5.0.4</jopt-simple.version>
